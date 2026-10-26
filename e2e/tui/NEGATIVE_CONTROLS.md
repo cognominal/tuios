@@ -9640,3 +9640,19 @@ Run on 2026-10-26 on Linux, against main at `9b4c9b8ef`.
 The fixed build passes both cases. With `TUIOS_E2E_FRAMES` set, each case
 writes `1-before.txt`, `2-covered.txt` and `3-after.txt`: the screen with
 the cells the host draws the image on marked.
+
+## Keys typed fast into a TML field reach the daemon in order
+
+`TestTMLInputTyping` types bursts of keys into a TML text field. Each key
+sends its own tml-input. Before the fix each call dialed its own connection
+at once, so a later key could reach the daemon before an earlier one. The
+daemon then kept an older value, and its next push put that value back in
+the field. The last key of a burst was lost, mostly the space of "y: ". Run
+on 2026-10-26 on Linux against main at `859cef306`, with four busy loops on
+the same cores as the test, `-count=50`.
+
+| Control: what was changed | Where it fails | Verdict |
+| --- | --- | --- |
+| The whole change (main) | 4 of 50 runs: "the paste in the field" three times, with the field at `y:ship it very soon (signed)`, and typing step 3 once | **caught** |
+
+The fixed build passes 100 of 100 runs under the same load.
