@@ -43,6 +43,12 @@ const (
 func (c *ckCanvas) reset(w, h int, bg color.Color) *ckCanvas {
 	if c == nil || c.w != w || c.h != h {
 		c = &ckCanvas{w: w, h: h, buf: uv.NewScreenBuffer(w, h), tmp: uv.NewScreenBuffer(w, 1)}
+		// The frame canvas cuts strings by grapheme, so draw has to as
+		// well: by code point, a Hangul syllable written as jamo takes a
+		// cell per jamo here and one 2-cell cluster in the frame, and the
+		// row comes out short (#1184).
+		c.buf.Method = ansi.GraphemeWidth
+		c.tmp.Method = ansi.GraphemeWidth
 	}
 	c.fill(0, 0, w, h, bg)
 	return c
@@ -164,8 +170,16 @@ func (c *ckCanvas) draw(x, y, w int, s string) {
 		}
 		cp := *src
 		if cp.Content == "" && cp.Width == 0 {
-			// The second cell of a wide character.
-			c.buf.SetCell(x+i, y, &cp)
+			// The second cell of a wide character. SetCell on the wide
+			// cell already wrote this placeholder, and a SetCell on a
+			// placeholder blanks the wide cell it belongs to (#1184), so
+			// leave it. When the wide cell itself fell off the left edge,
+			// blank this cell instead of leaving what was under it.
+			if i == 0 || x+i-1 < 0 {
+				blank := uv.EmptyCell
+				blank.Style = cp.Style
+				c.buf.SetCell(x+i, y, &blank)
+			}
 			continue
 		}
 		if cp.Style.Bg == nil {
