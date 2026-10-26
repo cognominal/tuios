@@ -68,6 +68,16 @@ func ParseBlocks(term vt.Terminal) []CommandBlock {
 func parseWithMarkers(term vt.Terminal, markers []vt.SemanticMarker) []CommandBlock {
 	var blocks []CommandBlock
 
+	// A TUI that repaints its rows re-emits the marks those rows carry, so the
+	// same command can arrive several times at the same row. A shell's own
+	// integrations do the same when two of them mark one prompt. The first
+	// copy of a command stands for all of them.
+	type blockKey struct {
+		startLine int
+		command   string
+	}
+	seen := make(map[blockKey]bool, len(markers))
+
 	for i := range len(markers) {
 		m := markers[i]
 		if m.Type != vt.MarkerPromptStart {
@@ -127,12 +137,19 @@ func parseWithMarkers(term vt.Terminal, markers []vt.SemanticMarker) []CommandBl
 			continue
 		}
 
+		// An agent TUI submits the turn's input as a zone of its own, so its
+		// command is what sits between A and B rather than between B and C.
+		submitted := submittedInput(&m, bMarker, cMarker, dMarker)
+
 		// Prefer command text captured at C-marker time (before output overwrites buffer).
 		// Fall back to reading from the terminal buffer if no capture available.
 		command := ""
-		if cMarker != nil && cMarker.CapturedText != "" {
+		switch {
+		case submitted:
+			command = extractSubmittedInput(term, m.AbsLine, bMarker.AbsLine)
+		case cMarker != nil && cMarker.CapturedText != "":
 			command = cMarker.CapturedText
-		} else {
+		default:
 			// Fallback: extract from terminal buffer (may be overwritten by TUI programs)
 			command = extractTextFromCol(term, bMarker.AbsLine, bMarker.Col)
 			if bMarker.AbsLine < cmdEndLine(cMarker, dMarker, bMarker) {
@@ -146,16 +163,25 @@ func parseWithMarkers(term vt.Terminal, markers []vt.SemanticMarker) []CommandBl
 		if command == "" {
 			continue
 		}
+		key := blockKey{m.AbsLine, command}
+		if seen[key] {
+			debugLog("  skipping a repeat of %q at line %d", command, m.AbsLine)
+			continue
+		}
+		seen[key] = true
 
-		// Extract output (between C and D)
+		// Extract output: between C and D for a shell command, and for a
+		// submitted input from the row after the marks that closed it, since
+		// those sit at the input's last row.
 		output := ""
 		styledOutput := ""
 		if cMarker != nil {
-			outEnd := 0
-			if dMarker != nil {
+			outStart := cMarker.AbsLine
+			outEnd := term.ScrollbackLen() + term.Height() - 1
+			if submitted {
+				outStart = zoneEndLine(cMarker, dMarker) + 1
+			} else if dMarker != nil {
 				outEnd = dMarker.AbsLine - 1
-			} else {
-				outEnd = term.ScrollbackLen() + term.Height() - 1
 			}
 
 			// Cap output at the next prompt boundary. After CSI 2J (clear/ctrl+l),
@@ -172,7 +198,7 @@ func parseWithMarkers(term vt.Terminal, markers []vt.SemanticMarker) []CommandBl
 			// been overwritten by later programs that use cursor repositioning
 			// (e.g. neofetch, htop). Scrollback lines are safe since they
 			// can't be overwritten by cursor movement.
-			if dMarker != nil && outEnd >= term.ScrollbackLen() {
+			if !submitted && dMarker != nil && outEnd >= term.ScrollbackLen() {
 				hasSubsequentExec := false
 				for j := i + 1; j < len(markers); j++ {
 					// Look for a C marker from a DIFFERENT (later) command.
@@ -190,9 +216,9 @@ func parseWithMarkers(term vt.Terminal, markers []vt.SemanticMarker) []CommandBl
 				}
 			}
 
-			if outEnd >= cMarker.AbsLine {
-				output = extractLinesText(term, cMarker.AbsLine, outEnd)
-				styledOutput = extractLinesStyledText(term, cMarker.AbsLine, outEnd)
+			if outEnd >= outStart {
+				output = extractLinesText(term, outStart, outEnd)
+				styledOutput = extractLinesStyledText(term, outStart, outEnd)
 			}
 		}
 
@@ -214,6 +240,70 @@ func parseWithMarkers(term vt.Terminal, markers []vt.SemanticMarker) []CommandBl
 
 	reverseBlocks(blocks)
 	return blocks
+}
+
+// submittedInput reports whether these marks describe an agent TUI's
+// submitted input rather than a shell command line.
+//
+// An agent TUI (omp) marks the input a person submits as a zone of its own:
+// the A mark opens on the input's first row and the B mark closes on its last,
+// then C and D are emitted at that same cell so the zone closes without
+// latching a terminal's cursor-to-input state. A shell puts both A and B on
+// the prompt, with the typed line after B and its output after C, so A and B
+// on different rows with C at B's cell and nothing between them is the agent
+// shape, and the input is what sits between A and B.
+//
+// The empty command line a shell marks on Enter is not this shape: it draws A
+// and B on one row, and zsh and bash run no preexec for it, so it sends no C
+// at all.
+func submittedInput(a, b, c, d *vt.SemanticMarker) bool {
+	if a == nil || b == nil || c == nil {
+		return false
+	}
+	if b.AbsLine <= a.AbsLine || c.AbsLine != b.AbsLine || c.Col != b.Col {
+		return false
+	}
+	return d == nil || (d.AbsLine == b.AbsLine && d.Col == b.Col)
+}
+
+// zoneEndLine is the last row a command's marks cover: D's row when the shell
+// sent one, else C's.
+func zoneEndLine(c, d *vt.SemanticMarker) int {
+	if d != nil {
+		return d.AbsLine
+	}
+	return c.AbsLine
+}
+
+// extractSubmittedInput reads the rows of a submitted input, from its A mark's
+// row to its B mark's row inclusive. Every row of the input carries the card's
+// inset, so the shortest of them is taken off all of them and a wrapped
+// message reads as it was written. It is not put through cleanCommandText:
+// what a person writes may hold any icon or emoji, which that would cut.
+func extractSubmittedInput(term vt.Terminal, from, to int) string {
+	if to < from {
+		return ""
+	}
+	lines := make([]string, 0, to-from+1)
+	inset := -1
+	for i := from; i <= to; i++ {
+		line := extractAbsLineText(term, i)
+		lines = append(lines, line)
+		if strings.TrimSpace(line) == "" {
+			continue
+		}
+		if n := len(line) - len(strings.TrimLeft(line, " ")); inset < 0 || n < inset {
+			inset = n
+		}
+	}
+	if inset > 0 {
+		for i, line := range lines {
+			if len(line) >= inset {
+				lines[i] = line[inset:]
+			}
+		}
+	}
+	return strings.TrimSpace(strings.Join(lines, "\n"))
 }
 
 func cmdEndLine(c, d, b *vt.SemanticMarker) int {

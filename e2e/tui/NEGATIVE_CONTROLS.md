@@ -9281,3 +9281,35 @@ The fixed build passes.
 | --- | --- | --- |
 | `printableRune` drops every private use code point, which is upstream main | "the rail and the dock did not draw the names with their icons, one cell each" | **caught** |
 | `printableRune` keeps every private use code point, also with Nerd Fonts off | "with Nerd Fonts off, the dock did not draw the workspace name without its icon" | **caught** |
+## The scrollback browser cuts an agent TUI's turns from its marks
+
+`TestScrollbackBrowserSegmentsAnAgentTUIsTurns` opens the browser with the
+leader and `s` on a pane that prints two turns the way omp submits them: the A
+mark opens on the input card's first row, B, C and D close on its last row at
+one cell, and nothing sits between B and C, which a shell always has. The
+second turn is printed twice at the same rows, the way omp's row diff repaints
+rows it has already drawn when the viewport top moves.
+
+The browser's own header must say `osc133`, which only the marks produce and
+which the pane's text cannot put on screen. The newest turn's command must copy
+out whole, `SUBMITTEDTWO turn two`, from the input and not from the card's
+padding or the empty run between B and C. `j` must reach the first turn,
+`SUBMITTEDONE turn one`, which a repeat of the newest turn listed beside it
+would prevent, and `y` must give that turn's reply, `ANSWERONE the reply to
+turn one`. Every check reads a clipboard write or the browser's header, never
+the screen text, because the pane behind the panel holds the same words.
+
+Run on 2026-10-26 on Linux amd64, `-count=1` and `-p 1`, against the built
+binary. Each control is one edit, built to its own binary, with the source put
+back and checked afterwards.
+
+| Control: what was cut | Where it fails | Verdict |
+| --- | --- | --- |
+| origin/main's parser, with no submitted-input shape | "the browser did not cut the turns from their marks". The header reads `(regex, 12 markers)`: no block comes from the marks, and the fallback's one block is the echoed command line | **caught** |
+| `if false && seen[key]`, so a repaint's repeat is kept | "the entry after the newest copied as \"SUBMITTEDTWO turn two\", want the first turn" | **caught** |
+
+With the change in place the test passes in about 3 s. The shape is also read
+straight off a real emulator: two turns of the pattern give two blocks with the
+input as the command and the reply after the closing marks as the output, while
+the same input under origin/main's parser gives none, and a shell's own marks
+are unaffected and still give the same blocks before and after.
