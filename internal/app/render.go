@@ -865,7 +865,7 @@ func (m *OS) fullscreenFastWindow() (*terminal.Window, bool) {
 	// so a panel added there cannot open over a lone pane unseen while it
 	// takes every key. The rest are the surfaces that list does not carry.
 	if m.AnyOverlayOpen() || m.ShowScrollbackBrowser || m.ShowCacheStats || m.ShowTapeManager || m.ShowTapeReview ||
-		m.PrefixActive || m.ContextMenu != nil || m.pathPicker != nil || m.Capture.Active || m.review.open {
+		m.PrefixActive || m.ContextMenu != nil || m.pathPicker != nil || m.Capture.Active || m.review.open || m.HelpMode {
 		return nil, false
 	}
 	if m.TapeRecorder != nil && m.TapeRecorder.IsRecording() {
