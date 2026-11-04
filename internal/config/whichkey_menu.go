@@ -220,10 +220,18 @@ var leaderToolRows = []menuRow{
 	{parts: []menuPart{{"prefix_keybinds", "Keybindings"}}, desc: "Keybindings"},
 	{parts: []menuPart{{"prefix_screenshot", "Screenshot"}}, desc: "Screenshot"},
 	{parts: []menuPart{{"prefix_transfers", "Copies"}}, desc: "Copies"},
-	{parts: []menuPart{{"prefix_jump_notif", "Newest message"}}, desc: "Newest message"},
-	{parts: []menuPart{{"prefix_last_message", "Show last message"}}, desc: "Show last message"},
-	{parts: []menuPart{{"prefix_help", "Help"}}, desc: "Help"},
-	{parts: []menuPart{{"prefix_help_mode", "Inspect"}}, desc: "Hover help"},
+	// The two message rows share one line: Help is a section of its own, and
+	// the leader's menu has no line to spare at 80x24 (see menuSections).
+	{parts: []menuPart{{"prefix_jump_notif", "Newest message"}, {"prefix_last_message", "Show last message"}}, desc: "Messages"},
+}
+
+// leaderHelpRows is the leader menu's Help section: the hover help that
+// explains one component, and the full key list. They are a section of their
+// own because a person who does not know a key looks here first, and because
+// the leader's h is the only key the mode needs to be found.
+var leaderHelpRows = []menuRow{
+	{parts: []menuPart{{"prefix_help_mode", "Hover help"}}, desc: "Hover help"},
+	{parts: []menuPart{{"prefix_help", "Full key list"}}, desc: "Full key list"},
 }
 
 // leaderAgentRows is the leader menu's Agents section.
@@ -323,6 +331,7 @@ func menuSections(prefixType string, st MenuState) []menuSection {
 		modes,
 		{title: "Menus", rows: leaderMenuRows},
 		{title: "Tools", rows: leaderToolRows},
+		{title: "Help", rows: leaderHelpRows},
 		{title: "Agents", rows: leaderAgentRows},
 	}
 }

@@ -331,7 +331,7 @@ func checkWhichKey(t *testing.T, term *tuitest.Terminal, wide bool) {
 	if wide && height > 16 {
 		t.Errorf("which-key takes %d rows at 120 columns, want at most 16\n%s", height, term.Snapshot())
 	}
-	headings := []string{"Windows", "Panes", "Sessions", "Modes", "Menus", "Tools"}
+	headings := []string{"Windows", "Panes", "Sessions", "Modes", "Menus", "Tools", "Help"}
 	shared := false
 	for y := top; y <= bottom && !shared; y++ {
 		n := 0
