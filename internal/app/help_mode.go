@@ -1030,7 +1030,7 @@ func (m *OS) renderHelpMode() *lipgloss.Layer {
 	}
 
 	pal := m.overlayUI()
-	width := m.helpPaneWidth()
+	width := m.helpPaneWidth(cur)
 	lines := m.helpBodyLines(comps, cur, width, pal)
 
 	// The pane cannot be taller than the screen it is drawn on. Losing the
@@ -1106,13 +1106,24 @@ func (m *OS) applyHelpSpotlight(canvas *frameCanvas) {
 }
 
 // helpPaneWidth is the pane's target width: wide enough for a key, its
-// description and a CLI line, never wider than the screen keeps room for.
-func (m *OS) helpPaneWidth() int {
+// description and a CLI line, never wider than the screen keeps room for. A
+// rail is a column the pane is placed beside rather than over, so a rail target
+// also has to leave the rails their columns; on a narrow screen that narrows
+// the pane instead of covering the rail it is explaining.
+func (m *OS) helpPaneWidth(cur *helpComponent) int {
 	width := min(60, m.GetRenderWidth()-4)
 	if width < 20 {
 		width = m.GetRenderWidth() - 2
 	}
-	return max(width, 10)
+	width = max(width, 10)
+	if rail, ok := m.helpRailBand(cur.rect); ok {
+		room := m.GetRenderWidth() - rail.Dx() - 2
+		if other := m.helpOtherRailBand(rail); !other.Empty() {
+			room = min(room, m.GetRenderWidth()-rail.Dx()-other.Dx()-2)
+		}
+		width = min(width, max(room, 10))
+	}
+	return width
 }
 
 // helpBodyLines lays out the pane's text. The styles carry the pane's ground,
@@ -1241,6 +1252,10 @@ func (m *OS) helpPath(comps []helpComponent, cur *helpComponent) string {
 // placeHelpPane puts the pane below the component, then above it, then beside
 // it. Only when none of those fits does it clamp into the screen, which is the
 // one case where it can cover the component it explains.
+//
+// A rail and the parts of a rail are the exception: a rail is a column of
+// rows, so there is no above or below a section that is not the rail itself.
+// Those go beside their rail, which `placeHelpPaneBesideRail` keeps visible.
 func (m *OS) placeHelpPane(anchor image.Rectangle, w, h int) (int, int) {
 	screenW, screenH := m.GetRenderWidth(), m.GetRenderHeight()
 	if screenW < 1 || screenH < 1 {
@@ -1253,6 +1268,9 @@ func (m *OS) placeHelpPane(anchor image.Rectangle, w, h int) (int, int) {
 	}
 	if anchor.Empty() {
 		return clamp((screenW-w)/2, (screenH-h)/2)
+	}
+	if rail, ok := m.helpRailBand(anchor); ok {
+		return m.placeHelpPaneBesideRail(rail, anchor, w, h)
 	}
 
 	dock := m.helpDockBand()
@@ -1290,6 +1308,64 @@ func (m *OS) placeHelpPane(anchor image.Rectangle, w, h int) (int, int) {
 		return clamp(centerX, anchor.Max.Y)
 	}
 	return clamp(centerX, anchor.Max.Y)
+}
+
+// placeHelpPaneBesideRail puts the pane on the side of the rail with room for
+// it, level with the section it explains and kept off the dock. The pane is
+// sized by helpPaneWidth to fit beside the rails, so the side away from the
+// screen edge is the one that fits; the clamp is for a screen too narrow even
+// for that, where something has to be covered and the pane at least stays on
+// screen.
+func (m *OS) placeHelpPaneBesideRail(rail, anchor image.Rectangle, w, h int) (int, int) {
+	screenW, screenH := m.GetRenderWidth(), m.GetRenderHeight()
+	x := rail.Max.X
+	if x+w > screenW {
+		x = rail.Min.X - w
+	}
+	x = min(max(x, 0), max(screenW-w, 0))
+	y := anchor.Min.Y + (anchor.Dy()-h)/2
+	if dock := m.helpDockBand(); !dock.Empty() && !anchor.Overlaps(dock) {
+		if dock.Min.Y == 0 {
+			y = max(y, dock.Max.Y)
+		} else {
+			y = min(y, dock.Min.Y-h)
+		}
+	}
+	return x, min(max(y, 0), max(screenH-h, 0))
+}
+
+// helpRailBand is the rail containing anchor, when the anchor is a rail or a
+// part of one. Placement asks this to put the pane beside the rail instead of
+// over it.
+func (m *OS) helpRailBand(anchor image.Rectangle) (image.Rectangle, bool) {
+	if anchor.Empty() {
+		return image.Rectangle{}, false
+	}
+	for _, id := range []string{"rail:left", "rail:right"} {
+		rail := helpComponentByID(m.helpComps, id)
+		if rail == nil || rail.rect.Empty() {
+			continue
+		}
+		if anchor.Min.X >= rail.rect.Min.X && anchor.Max.X <= rail.rect.Max.X &&
+			anchor.Min.Y >= rail.rect.Min.Y && anchor.Max.Y <= rail.rect.Max.Y {
+			return rail.rect, true
+		}
+	}
+	return image.Rectangle{}, false
+}
+
+// helpOtherRailBand is the rail on the other edge, when one is shown. Sizing
+// the pane for a rail target leaves that rail its columns too, so both rails
+// stay visible.
+func (m *OS) helpOtherRailBand(band image.Rectangle) image.Rectangle {
+	for _, id := range []string{"rail:left", "rail:right"} {
+		rail := helpComponentByID(m.helpComps, id)
+		if rail == nil || rail.rect.Empty() || rail.rect == band {
+			continue
+		}
+		return rail.rect
+	}
+	return image.Rectangle{}
 }
 
 // helpDockBand is the dock's rows on this frame, or the zero rectangle when

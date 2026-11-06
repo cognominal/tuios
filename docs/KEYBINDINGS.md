@@ -187,7 +187,9 @@ on a terminal too.
 `Ctrl+B h` opens help mode. It explains one component at a time rather than
 listing every key: move the pointer over a rail, the dock or one of its cells, a
 pane's title bar or its terminal body, and a pane with a red border appears
-above or below it, never over it when the screen has room. The pane says what
+above or below it, never over it when the screen has room. A rail section is the
+exception: its pane sits beside the rail, so the column being explained stays
+visible, narrowing the pane when the screen is tight. The pane says what
 the component is for, the hotkeys that act on it, and the `tuios` commands that
 change it. `Ctrl+B ?` still opens the full key list.
 
