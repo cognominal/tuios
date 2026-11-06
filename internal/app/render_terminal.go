@@ -451,8 +451,10 @@ func (m *OS) renderTerminal(window *terminal.Window, isFocused bool, inTerminalM
 	// the mark rather than removed it.
 	//
 	// Every term is fixed for the frame, the emulator's included since the
-	// IO lock is held, so it is decided once here rather than per cell.
-	drawFakeCursor := !useRealCursor && !m.Resizing && !overlayOpen && isFocused && inTerminalMode && !inCopyMode && !screen.IsCursorHidden()
+	// IO lock is held, so it is decided once here rather than per cell. Help
+	// mode is the case where the pane stays visible but takes no key: the
+	// caret has to go with the typing.
+	drawFakeCursor := !useRealCursor && !m.Resizing && !overlayOpen && !m.HelpMode && isFocused && inTerminalMode && !inCopyMode && !screen.IsCursorHidden()
 
 	// Use pooled highlight grids to reduce allocations
 	var searchHighlights, currentMatchHighlight, visualSelection *pool.HighlightGrid

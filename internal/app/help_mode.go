@@ -1,6 +1,7 @@
 package app
 
 import (
+	"fmt"
 	"image"
 	"slices"
 	"sort"
@@ -1078,7 +1079,17 @@ func (m *OS) helpBodyLines(comps []helpComponent, cur *helpComponent, width int,
 	note := overlay.Style(bg).Foreground(pal.FgMute)
 
 	var lines []string
-	lines = append(lines, title.Render(overlay.Truncate(cur.title, inner)))
+	// Name how many parts Down can reach, so a component worth walking into
+	// says so before the key is pressed.
+	heading := cur.title
+	if kids := len(helpChildren(comps, cur.id)); kids > 0 {
+		noun := "parts"
+		if kids == 1 {
+			noun = "part"
+		}
+		heading += fmt.Sprintf(" (%d %s)", kids, noun)
+	}
+	lines = append(lines, title.Render(overlay.Truncate(heading, inner)))
 	if path := m.helpPath(comps, cur); path != "" && path != cur.title {
 		lines = append(lines, muted.Render(overlay.Truncate(path, inner)))
 	}
@@ -1118,7 +1129,14 @@ func (m *OS) helpBodyLines(comps []helpComponent, cur *helpComponent, width int,
 		}
 	}
 
-	footer := "Tab components    Up/Down in and out    h all keys"
+	// Up and Down do nothing on a top-level component with no parts: there is
+	// nowhere deeper to go and nothing to come back out of. Naming them there
+	// promises a move the keys cannot make.
+	footer := "Tab components"
+	if cur.parent != "" || len(helpChildren(comps, cur.id)) > 0 {
+		footer += "    Up/Down in and out"
+	}
+	footer += "    h all keys"
 	if helpIndex(comps, "rail:left") >= 0 || helpIndex(comps, "rail:right") >= 0 {
 		footer += "    s rail    S other rail"
 	}

@@ -42,6 +42,13 @@ func (m *OS) paneCursor() (cur *tea.Cursor, hidden bool) {
 		return nil, false
 	}
 
+	// Help mode owns the keyboard and its pane explains the target instead of
+	// covering it, so the pane's own caret would keep blinking beside the
+	// explanation as if the next letter were going to the shell.
+	if m.HelpMode {
+		return nil, false
+	}
+
 	// An overlay covers the pane, so the pane's cursor has nothing to point at.
 	// The panels that take typing draw their own caret as a character, which is
 	// why this hides the terminal one rather than moving it: leaving it on put a
