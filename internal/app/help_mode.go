@@ -325,6 +325,23 @@ func (m *OS) helpKeys(actions ...string) []helpKey {
 	return out
 }
 
+// helpRailWideKeys are the moves that act on a rail as a whole rather than on
+// one row: putting the rail away and putting the keyboard into it. Every rail
+// component leads with them, because a section is explained from the rail's
+// own pane and these are the rail's keys.
+func (m *OS) helpRailWideKeys(other bool) []helpKey {
+	action := "prefix_toggle_sidebar"
+	if other {
+		action = "prefix_toggle_other_rail"
+	}
+	keys := m.helpKeys(action)
+	for _, k := range m.helpKeys("prefix_explore") {
+		k.desc = "Focus this rail, or leave it for the panes"
+		keys = append(keys, k)
+	}
+	return keys
+}
+
 // helpScopedKeys is helpKeys for a section that is read in its own scope
 // rather than through the prefix map, such as the rail's keys.
 func (m *OS) helpScopedKeys(scope string, actions ...string) []helpKey {
@@ -478,20 +495,17 @@ func (m *OS) helpRailComponent(edge sidebarEdge, width int, shown, other bool) [
 	if !shown {
 		purpose = "This rail is hidden, so it has no rectangle to hover. Press " + toggle + " in help mode to show it, look at it, and press " + toggle + " again to put it away. " + purpose
 	}
-	keys := append([]helpKey{{press: toggle, desc: toggleDesc}},
+	keys := append([]helpKey{{press: toggle, desc: toggleDesc}}, m.helpRailWideKeys(other)...)
+	keys = append(keys,
 		m.helpScopedKeys(config.ScopeSidebar, "activate", "cursor_down", "cursor_up", "collapse", "expand", "section", "new_session", "new_window")...)
-	railAction := "prefix_toggle_sidebar"
-	if other {
-		railAction = "prefix_toggle_other_rail"
-	}
-	keys = append(keys, m.helpKeys(railAction, "prefix_explore")...)
 	keys = helpCap(keys, 7)
 
-	all := append([]helpKey{{press: toggle, desc: toggleDesc}}, m.helpAllScopedKeys(
+	all := append([]helpKey{{press: toggle, desc: toggleDesc}}, m.helpRailWideKeys(other)...)
+	all = append(all, m.helpAllScopedKeys(
 		config.ScopeSidebar, config.ScopeSidebarFiles, config.ScopeSidebarAgents)...)
 	all = append(all, m.helpKeys(
-		railAction, "prefix_toggle_spotlight",
-		"prefix_explore", "prefix_session_switcher", "prefix_inbox", "prefix_mail")...)
+		"prefix_toggle_spotlight",
+		"prefix_session_switcher", "prefix_inbox", "prefix_mail")...)
 
 	parent := helpComponent{
 		id:      id,
@@ -533,7 +547,7 @@ func (m *OS) helpRailComponent(edge sidebarEdge, width int, shown, other bool) [
 		if !ok {
 			continue
 		}
-		out = append(out, m.helpRailChild(group, id, r))
+		out = append(out, m.helpRailChild(group, id, r, other))
 	}
 	return out
 }
@@ -559,20 +573,20 @@ func helpRailGroup(kind sidebarRowKind) string {
 }
 
 // helpRailChild explains one section of a rail.
-func (m *OS) helpRailChild(group, parent string, rect image.Rectangle) helpComponent {
+func (m *OS) helpRailChild(group, parent string, rect image.Rectangle, other bool) helpComponent {
 	c := helpComponent{id: parent + "/" + group, parent: parent, rect: rect}
 	switch group {
 	case "sessions":
 		c.title = "Sessions"
 		c.purpose = "One row per daemon session. Enter opens the session this client shows; n makes a new one; r renames; x kills. The number ahead of a name is the switch key."
 		c.keys = helpCap(m.helpScopedKeys(config.ScopeSidebar,
-			"activate", "new_session", "rename", "kill", "cursor_down", "cursor_up"), 6)
+			"activate", "new_session", "rename", "kill", "cursor_down", "cursor_up"), 4)
 		c.cli = []string{"tuios ls", "tuios new work", "tuios rename-session work", "tuios kill-session work"}
 	case "panes":
 		c.title = "Panes"
 		c.purpose = "The panes of the session the rail follows. Enter focuses one; the + makes another. A pane row is also the drag handle for moving the pane between workspaces."
 		c.keys = helpCap(m.helpScopedKeys(config.ScopeSidebar,
-			"activate", "new_window", "cursor_down", "cursor_up", "reorder_down", "reorder_up"), 6)
+			"activate", "new_window", "cursor_down", "cursor_up", "reorder_down", "reorder_up"), 4)
 		c.keys = append(c.keys, m.helpKeys("prefix_next_window", "prefix_prev_window")...)
 		c.cli = []string{"tuios new-window", "tuios list-windows", "tuios select-window <name>"}
 	case "agents":
@@ -581,24 +595,27 @@ func (m *OS) helpRailChild(group, parent string, rect image.Rectangle) helpCompo
 		c.keys = append(m.helpScopedKeys(config.ScopeSidebarAgents,
 			"activate", "cursor_down", "cursor_up"), m.helpScopedKeys(config.ScopeSidebar,
 			"agents_filter", "agents_sort", "mail", "cursor_down", "cursor_up")...)
-		c.keys = helpCap(c.keys, 7)
+		c.keys = helpCap(c.keys, 6)
 		c.keys = append(c.keys, m.helpKeys("prefix_inbox", "prefix_next_attention")...)
 		c.cli = []string{"tuios list-agents", "tuios respond <action>", "tuios send-agent-message <text>"}
 	case "files":
 		c.title = "Files"
 		c.purpose = "The directory below the focused pane. Enter opens a name, e edits it in the configured editor, / searches, and p pastes a copied or cut entry. The header's cd sends the pane there."
 		c.keys = helpCap(m.helpScopedKeys(config.ScopeSidebarFiles,
-			"file_open", "file_edit", "file_search", "file_delete", "file_paste", "file_copy", "file_cut"), 7)
+			"file_open", "file_edit", "file_search", "file_delete", "file_paste", "file_copy", "file_cut"), 5)
 		c.cli = []string{"tuios set-config appearance.sidebar.sections sessions:25,terminals,files:25,agents:34", "tuios config edit"}
 	case "controls":
 		c.title = "Rail controls"
 		c.purpose = "The rail's own controls: collapse it to a strip, widen or narrow it, put the files section on and off, and move keyboard focus into the rail."
-		c.keys = append(m.helpScopedKeys(config.ScopeSidebar,
-			"collapse", "expand", "narrow", "widen", "file_search"), m.helpKeys(
-			"prefix_toggle_sidebar", "prefix_toggle_other_rail", "prefix_explore")...)
-		c.keys = helpCap(c.keys, 7)
+		c.keys = helpCap(m.helpScopedKeys(config.ScopeSidebar,
+			"collapse", "expand", "narrow", "widen", "file_search"), 5)
 		c.cli = []string{"tuios set-config appearance.sidebar.width 30", "tuios set-config appearance.sidebar.position left"}
 	}
+	// A rail section is read from the rail's pane, and both of these moves act
+	// on the whole rail, so they lead the section's own keys rather than
+	// waiting behind them for the cap.
+	wide := m.helpRailWideKeys(other)
+	c.keys = append(wide, c.keys...)
 	switch group {
 	case "agents":
 		c.allKeys = m.helpAllScopedKeys(config.ScopeSidebarAgents)
@@ -607,6 +624,7 @@ func (m *OS) helpRailChild(group, parent string, rect image.Rectangle) helpCompo
 	default:
 		c.allKeys = m.helpAllScopedKeys(config.ScopeSidebar)
 	}
+	c.allKeys = append(append([]helpKey{}, wide...), c.allKeys...)
 	if group == "panes" {
 		c.allKeys = append(c.allKeys, m.helpKeys(
 			"prefix_next_window", "prefix_prev_window", "prefix_close_window",
