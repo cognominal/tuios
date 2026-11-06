@@ -204,7 +204,10 @@ change it. `Ctrl+B ?` still opens the full key list.
 A hidden rail still has an entry in the rotation, marked `(hidden)`; `s` (or `S`
 for the opposite edge) gives it a rectangle to hover. While help mode is on it
 owns the keyboard and the pointer: no letter reaches a pane, and a click or a
-wheel event acts on nothing but the selected component. The default is
+wheel event acts on nothing but the selected component. Everything but that
+component and the explaining pane is dimmed by `appearance.modal_dim` (default
+`30`), so the component under the pane stays the bright thing on screen; `0`
+turns the dimming off. The default is
 `prefix_help_mode = ["h"]` in
 `[keybindings.prefix_mode]`, so a preset that binds `h` to something else takes
 the key with it; rebind either action.

@@ -334,7 +334,7 @@ var optionSpecs = []Option{
 	},
 	{
 		Path: "appearance.modal_dim", Type: OptionInt, Section: "appearance",
-		Description: "How much the screen behind a modal panel is darkened, as a percent. 0 is off.",
+		Description: "How much the screen behind a modal panel, or around the component help mode explains, is darkened, as a percent. 0 is off.",
 		Default:     strconv.Itoa(ModalDimDefault), Min: 0, Max: ModalDimMax,
 		Percent: true,
 	},

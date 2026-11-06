@@ -2183,7 +2183,7 @@ name alone. Some of them:
 | `dim_unfocused` | `0` to `90` | Percent the content of a pane you are not in is dimmed (default `0`, off) |
 | `dim_foreground` | `true`, `false` | Let `dim_unfocused` dim the text of a pane you are not in as well as its background (default `true`). `false` keeps the text at full strength and dims only the background |
 | `dim_multifocus` | `true`, `false` | Dim the panes in the multifocus set like other panes you are not in (default `false`) |
-| `modal_dim` | `0` to `90` | Percent the screen behind a modal panel is dimmed (default `30`, `0` is off). On a light ground the screen fades toward its own background instead of darkening |
+| `modal_dim` | `0` to `90` | Percent the screen behind a modal panel, or around the component help mode explains, is dimmed (default `30`, `0` is off). On a light ground the screen fades toward its own background instead of darkening |
 | `popup_dim` | `0` to `90` | Percent the screen behind a focused plain popup is dimmed (default `0`, off). `popup --dim` overrides it |
 | `animations_enabled` | `true`, `false` | Deprecated on/off switch: `false` sets `motion` to `none`, `true` to `full` |
 | `hide_window_buttons` | `true`, `false` | Hide window buttons |

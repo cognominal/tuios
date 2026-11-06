@@ -365,6 +365,13 @@ func (m *OS) composeLayersIn(canvas *frameCanvas, layers []*lipgloss.Layer, pane
 			m.applyScrim(canvas, m.Settings.ModalDim)
 			scrimmed = true
 		}
+		// The help pane is the first layer above every component, so this is
+		// where help mode turns the screen down around what it explains. The
+		// pane itself, and every layer above it, is drawn after and stays at
+		// full strength. See applyHelpSpotlight.
+		if cl.layer.GetID() == helpLayerID {
+			m.applyHelpSpotlight(canvas)
+		}
 		m.drawComposedLayer(canvas, cl, painted, &grounds, area)
 		if chromeScrim && scrimmedChrome(cl.layer.GetID()) {
 			m.applyScrimIn(canvas, cl.bounds, popupDim)

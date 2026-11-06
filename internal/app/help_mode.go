@@ -1052,7 +1052,57 @@ func (m *OS) renderHelpMode() *lipgloss.Layer {
 	boxW, boxH := lipgloss.Width(box), lipgloss.Height(box)
 	x, y := m.placeHelpPane(cur.rect, boxW, boxH)
 	m.helpPaneRect = image.Rect(x, y, x+boxW, y+boxH)
-	return lipgloss.NewLayer(box).X(x).Y(y).Z(config.ZIndexWhichKey + 1).ID("help-mode")
+	return lipgloss.NewLayer(box).X(x).Y(y).Z(config.ZIndexWhichKey + 1).ID(helpLayerID)
+}
+
+// helpLayerID is the compositor id of the help pane. It is what compose looks
+// for to know that the frame is in help mode and where to turn the screen
+// down. See applyHelpSpotlight.
+const helpLayerID = "help-mode"
+
+// helpSpotlightRect is the cells help mode leaves lit: the component it is
+// explaining and the pane that explains it. It is empty when there is nothing
+// to light: the mode is off, the target has no rectangle to point at (a hidden
+// rail), or the pane was not placed this frame.
+func (m *OS) helpSpotlightRect() image.Rectangle {
+	if !m.HelpMode || m.helpPaneRect.Empty() {
+		return image.Rectangle{}
+	}
+	cur := helpComponentByID(m.helpComps, m.helpTarget)
+	if cur == nil || cur.rect.Empty() {
+		return image.Rectangle{}
+	}
+	return cur.rect.Union(m.helpPaneRect)
+}
+
+// applyHelpSpotlight turns the screen down around the lit rectangle, so the
+// component help mode explains is the one thing left at full strength. Compose
+// runs it immediately before the pane's own layer is drawn: every component is
+// on the canvas by then and the pane is not, so the pane, the notifications
+// above it and the pointer's labels keep the contrast they were drawn with.
+//
+// It is the modal scrim, four bands around the lit rectangle rather than a
+// pass per pane: it edits the composed canvas in place, so moving the
+// selection re-renders no pane, and each cell is visited at most once. At 16
+// colours it inherits the scrim's faint-only fallback, which still leaves the
+// lit component the only run at full contrast.
+//
+// appearance.modal_dim sets how far the rest is turned down, the same knob the
+// screen behind a modal follows; zero turns the cue off with it.
+func (m *OS) applyHelpSpotlight(canvas *frameCanvas) {
+	lit := m.helpSpotlightRect().Intersect(canvas.Bounds())
+	dim := m.Settings.ModalDim
+	if lit.Empty() || dim <= 0 {
+		return
+	}
+	b := canvas.Bounds()
+	// Image glyphs first, so the dim reaches them like text, as it does under
+	// a modal scrim.
+	m.drawImageSymbols(canvas)
+	m.applyScrimIn(canvas, image.Rect(b.Min.X, b.Min.Y, b.Max.X, lit.Min.Y), dim)
+	m.applyScrimIn(canvas, image.Rect(b.Min.X, lit.Max.Y, b.Max.X, b.Max.Y), dim)
+	m.applyScrimIn(canvas, image.Rect(b.Min.X, lit.Min.Y, lit.Min.X, lit.Max.Y), dim)
+	m.applyScrimIn(canvas, image.Rect(lit.Max.X, lit.Min.Y, b.Max.X, lit.Max.Y), dim)
 }
 
 // helpPaneWidth is the pane's target width: wide enough for a key, its
