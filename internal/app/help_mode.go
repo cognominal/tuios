@@ -331,10 +331,15 @@ func (m *OS) helpKeys(actions ...string) []helpKey {
 // own pane and these are the rail's keys.
 func (m *OS) helpRailWideKeys(other bool) []helpKey {
 	action := "prefix_toggle_sidebar"
+	toggleDesc := "Toggle this rail"
 	if other {
 		action = "prefix_toggle_other_rail"
+		toggleDesc = "Toggle the opposite rail"
 	}
 	keys := m.helpKeys(action)
+	for i := range keys {
+		keys[i].desc = toggleDesc
+	}
 	for _, k := range m.helpKeys("prefix_explore") {
 		k.desc = "Focus this rail, or leave it for the panes"
 		keys = append(keys, k)
