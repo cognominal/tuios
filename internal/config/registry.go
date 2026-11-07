@@ -1089,9 +1089,10 @@ var ActionDescriptions = map[string]string{
 	"terminal_paste_host":       "Paste from the host clipboard",
 
 	// Global (window mode and terminal mode alike)
-	"command_palette": "Open the command palette",
-	"launcher":        "Open the app launcher",
-	"new_session":     "Make a session, asking which machine",
+	"command_palette":  "Open the command palette",
+	"launcher":         "Open the app launcher",
+	"toggle_help_mode": "Inspect a component's help",
+	"new_session":      "Make a session, asking which machine",
 
 	// Script playback
 	"script_pause": "Pause or resume the playing tape",

@@ -23,7 +23,7 @@ func TestSwallowSetMatchesTheInputPath(t *testing.T) {
 	// action that survives into terminal mode on a reserved chord, the same
 	// action on a bare key, and an action that never survives on either.
 	o := osWithBindings(t, func(kb *config.KeybindingsConfig) {
-		kb.Workspaces["switch_workspace_1"] = []string{"alt+1", "f1"}
+		kb.Workspaces["switch_workspace_1"] = []string{"alt+1", "f5"}
 		kb.Workspaces["switch_workspace_2"] = []string{"ctrl+alt+2"}
 		kb.WindowManagement["next_session"] = []string{"alt+shift+n"}
 		// A window verb on a reserved chord: reserved, but not terminal-safe,
@@ -49,7 +49,7 @@ func TestSwallowSetMatchesTheInputPath(t *testing.T) {
 		{"alt+shift+n", tea.KeyPressMsg{Code: 'n', Mod: tea.ModAlt | tea.ModShift}},
 		// Bound to a workspace switch, but with no reserved modifier, so the
 		// router leaves it to the shell.
-		{"f1", tea.KeyPressMsg{Code: tea.KeyF1}},
+		{"f5", tea.KeyPressMsg{Code: tea.KeyF5}},
 		// Reserved chord, but a window verb, so the router leaves it alone.
 		{"alt+q", tea.KeyPressMsg{Code: 'q', Mod: tea.ModAlt}},
 		// Plain typing, which must always reach the pane.
@@ -61,7 +61,7 @@ func TestSwallowSetMatchesTheInputPath(t *testing.T) {
 		// A fresh model per case: dispatching an action mutates state, and a
 		// workspace switch changes what the next dispatch does.
 		fresh := osWithBindings(t, func(kb *config.KeybindingsConfig) {
-			kb.Workspaces["switch_workspace_1"] = []string{"alt+1", "f1"}
+			kb.Workspaces["switch_workspace_1"] = []string{"alt+1", "f5"}
 			kb.Workspaces["switch_workspace_2"] = []string{"ctrl+alt+2"}
 			kb.WindowManagement["next_session"] = []string{"alt+shift+n"}
 			kb.WindowManagement["close_window"] = []string{"alt+q"}

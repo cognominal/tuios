@@ -184,35 +184,42 @@ on a terminal too.
 
 ## Hover help
 
-`Ctrl+B h` opens help mode. It explains one component at a time rather than
-listing every key: move the pointer over a rail, the dock or one of its cells, a
-pane's title bar or its terminal body, and a pane with a red border appears
-above or below it, never over it when the screen has room. A rail section is the
-exception: its pane sits beside the rail, so the column being explained stays
-visible, narrowing the pane when the screen is tight. The pane says what
-the component is for, the hotkeys that act on it, and the `tuios` commands that
-change it. `Ctrl+B ?` still opens the full key list.
+`Ctrl+B h` or `Shift+F1` opens help mode. It explains one component at a time rather
+than listing every key: move the pointer over a rail, the dock or one of its
+cells, a pane's title bar or its terminal body, and a pane with a red border
+appears above or below it, never over it when the screen has room. A rail
+section is the exception: its pane sits beside the rail, so the column being
+explained stays visible, narrowing the pane when the screen is tight. The pane
+says what the component is for, the hotkeys that act on it, and the `tuios`
+commands that change it. A line above the keys names the mode the keys belong
+to, window or terminal, and whether the component holds the keyboard, so the
+list is read in the state it will run in; a component that never takes the
+keyboard, such as the dock, says so. `Ctrl+B ?` still opens the full key list.
+
+Help mode only reads. Nothing it is bound to changes the layout it explains:
+the rail's own toggles are listed, not run, so leave the mode to use them.
 
 | Key | What it does |
 | --- | --- |
-| `Tab`, `Shift+Tab` | Next or previous top-level component. `←` and `→` do the same. |
-| `Down` | Move into the selected component's parts, such as a rail's sections or a pane's title bar and body, then through them. |
-| `Up` | Move back out: previous part, then the component itself. |
+| `Shift+Tab` | Next top-level component. |
+| `Shift+Down` | Move into the selected component's parts, such as a rail's sections or a pane's title bar and body, then through them. |
+| `Shift+Up` | Move back out: previous part, then the component itself. |
+| `Up`, `Down` | Scroll the explanation when it is taller than the screen; the wheel does the same. The title and the navigation footer stay put. |
 | `h` | Show every keybinding of the selected component instead of the short list. |
-| `s` | Show or hide the session rail, so a hidden rail can be inspected. |
-| `S` | Show or hide the opposite rail, when one is configured. |
-| `esc` | Leave help mode. |
+| `esc`, `Shift+F1` | Leave help mode. |
 
-A hidden rail still has an entry in the rotation, marked `(hidden)`; `s` (or `S`
-for the opposite edge) gives it a rectangle to hover. While help mode is on it
-owns the keyboard and the pointer: no letter reaches a pane, and a click or a
-wheel event acts on nothing but the selected component. Everything but that
-component and the explaining pane is dimmed by `appearance.modal_dim` (default
-`30`), so the component under the pane stays the bright thing on screen; `0`
-turns the dimming off. The default is
+A hidden rail still has an entry in the rotation, marked `(hidden)`; its pane
+names the chord that brings it back once you leave. While help mode is on it
+owns the keyboard and the pointer: no letter reaches a pane, a click acts on
+nothing but the selected component, and the wheel scrolls the pane and nothing
+else. Everything but that component and the explaining pane is dimmed by
+`appearance.modal_dim` (default `30`), so the component under the pane stays the
+bright thing on screen; `0` turns the dimming off. The default is
 `prefix_help_mode = ["h"]` in
 `[keybindings.prefix_mode]`, so a preset that binds `h` to something else takes
-the key with it; rebind either action.
+the key with it; rebind either action. `Shift+F1` is `toggle_help_mode` in
+`[keybindings.global]`, live in window and terminal mode alike, so it does not
+reach the program in the pane; set it to `[]` to give it back.
 
 ## Editing sidebar files
 

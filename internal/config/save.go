@@ -84,12 +84,15 @@ const configHeaderRest = "# Documentation: https://github.com/Gaurav-Gosain/tuio
 	"# clashes with what, and which keys never reach the program in the pane.\n" +
 	"#\n" +
 	"# [keybindings.global] acts in window mode and terminal mode alike. It binds\n" +
-	"# ctrl+p to the command palette and alt+space to the launcher, which costs\n" +
-	"# you fish's history-back and readline's set-mark. To move or drop either:\n" +
+	"# ctrl+p to the command palette, alt+space to the launcher and shift+f1 to\n" +
+	"# the component help, which costs you fish's history-back, readline's set-mark\n" +
+	"# and the shift+F1 the program in the pane would have had. To move or drop\n" +
+	"# any of them:\n" +
 	"#\n" +
 	"#   [keybindings.global]\n" +
 	"#   command_palette = [\"ctrl+shift+p\"]\n" +
 	"#   launcher = []\n" +
+	"#   toggle_help_mode = []\n" +
 	"#\n" +
 	"# [keybindings.terminal_mode] binds alt+arrows to move focus between panes.\n" +
 	"# In readline, fish and zsh, alt+left and alt+right move the cursor a word\n" +

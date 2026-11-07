@@ -256,9 +256,10 @@ type OS struct {
 	pointerSeenX int
 	pointerSeenY int
 	ShowHelp     bool
-	// HelpMode is the hover help mode: the leader then h enters it, esc leaves
-	// it. The mouse, or Tab and the arrow keys, walk the components on screen
-	// and the pane explains the one under the cursor. See help_mode.go.
+	// HelpMode is the hover help mode: the leader then h, or Shift+F1, enters it,
+	// esc leaves it. The mouse, or Shift+Tab and Shift+Up/Down, walk the
+	// components on screen and the pane explains the one under the cursor.
+	// Nothing in it changes the layout it explains. See help_mode.go.
 	HelpMode bool
 	// helpTarget is the id of the component help mode explains. Empty until
 	// the first component is selected.
@@ -270,8 +271,12 @@ type OS struct {
 	// cells. Motion over the pane itself is ignored, so reading it does not
 	// select whatever the pane covers.
 	helpPaneRect image.Rectangle
+	// helpScroll is the first body line the pane shows when the explanation
+	// is taller than the screen allows. Up and Down move it; the title and the
+	// footer stay where they are.
+	helpScroll int
 	// helpComps is the component list the last frame drew. Motion and the
-	// Tab/arrow keys read it instead of rebuilding every row's help.
+	// navigation keys read it instead of rebuilding every row's help.
 	helpComps       []helpComponent
 	InteractionMode bool              // True when actively dragging/resizing
 	WindowExitChan  chan string       // Channel to signal window closure

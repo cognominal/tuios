@@ -7,30 +7,27 @@ import (
 
 // handleHelpModeKey routes the keys help mode owns. Everything else is
 // swallowed: a letter typed while the mode is on is not text for the shell, and
-// a leader chord in it is not a second mode. The keys are deliberately few and
-// unmodified, because the mode exists to be read, not to be learned.
+// a leader chord in it is not a second mode. The mode is read-only, so no key
+// here changes the layout it explains; the rail chords the pane lists are
+// things to press after leaving. Navigation and scrolling take a chord each,
+// because the bare keys they used to take are things the user may be reading
+// about, and h is the one bare letter help mode keeps.
 func handleHelpModeKey(msg tea.KeyPressMsg, o *app.OS) (*app.OS, tea.Cmd) {
 	switch msg.String() {
-	case "esc", "ctrl+c":
+	case "esc", "ctrl+c", "shift+f1":
 		o.ExitHelpMode()
-	case "tab":
-		o.HelpNext(1)
 	case "shift+tab":
-		o.HelpNext(-1)
-	case "down":
-		o.HelpDeeper()
-	case "up":
-		o.HelpShallower()
-	case "left":
-		o.HelpNext(-1)
-	case "right":
 		o.HelpNext(1)
+	case "shift+down":
+		o.HelpDeeper()
+	case "shift+up":
+		o.HelpShallower()
+	case "up":
+		o.HelpScroll(-1)
+	case "down":
+		o.HelpScroll(1)
 	case "h":
 		o.HelpToggleKeys()
-	case "s":
-		o.HelpToggleRail(false)
-	case "S":
-		o.HelpToggleRail(true)
 	}
 	return o, nil
 }

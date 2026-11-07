@@ -225,6 +225,11 @@ func (d *ActionDispatcher) registerHandlers() {
 	// dispatcher actions rather than cases of a switch; see global_binds.go.
 	d.Register("command_palette", handleOpenCommandPalette)
 	d.Register("launcher", handleOpenLauncher)
+	// Shift+F1 reaches the hover help from both modes. The leader's h reaches
+	// the same handler as prefix_help_mode; this one lets a single key do it
+	// without a chord first, and one most programs leave alone, so the pane
+	// rarely loses a key it wanted.
+	d.Register("toggle_help_mode", handleToggleHelpMode)
 	d.Register("new_session", handleNewSession)
 	d.Register("next_session", handleNextSession)
 	d.Register("prev_session", handlePrevSession)

@@ -1626,6 +1626,12 @@ func DefaultConfig() *UserConfig {
 				// forwarded again.
 				"command_palette": {"ctrl+p"},
 				"launcher":        {"alt+space"},
+				// shift+f1 is what most terminals and editors put help behind,
+				// and help mode explains the interface without changing it. It
+				// is taken from the pane on purpose, in terminal mode as well as
+				// window mode, and it is the shifted form because a program that
+				// wants a bare f1 keeps it. Set it to [] to hand it back.
+				"toggle_help_mode": {"shift+f1"},
 			},
 			Script: map[string][]string{
 				"script_pause": {"ctrl+p"},

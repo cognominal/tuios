@@ -138,6 +138,13 @@ func HandleInput(msg tea.Msg, o *app.OS) (tea.Model, tea.Cmd) {
 		o.ReleaseGestureAnnouncements()
 	case tea.MouseWheelMsg:
 		if o.HelpMode {
+			// The wheel scrolls the explanation the way Up and Down do. It
+			// turns nothing else: no pane, no list, no review.
+			step := -3
+			if msg.Button == tea.MouseWheelDown {
+				step = 3
+			}
+			o.HelpScroll(step)
 			return o, nil
 		}
 		// A wheel scrolls the pane out from under the labels, so it ends
