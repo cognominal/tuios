@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"image"
 	"slices"
-	"sort"
 	"strings"
 
 	"charm.land/lipgloss/v2"
@@ -14,13 +13,15 @@ import (
 )
 
 // Help mode is the hover help the leader then h opens. It is not the help
-// overlay: nothing is listed up front and no key is taken from the pane. The
-// pointer, or Tab and Shift+Tab, moves between the components on screen; Up
-// and Down move into and out of a component that has parts; h shows the whole
-// keybinding set of the component selected; esc leaves. The pane that explains
-// the component is drawn above or below it, never over it where the screen has
-// room, and its border is the error ink, so it reads as an inspection surface
-// rather than as one more dock or rail.
+// overlay: nothing is listed up front, and it reads only the keys it binds.
+// The pointer, or Shift+Tab, moves between the components on screen;
+// Shift+Up and Shift+Down move into and out of a component that has parts; h
+// shows the whole keybinding set of the component selected; esc leaves. The
+// rest of the keyboard is the app's, so a chord the pane lists runs while the
+// pane explains it, and the pane follows the layout that chord leaves. The
+// pane that explains the component is drawn above or below it, never over it
+// where the screen has room, and its border is the error ink, so it reads as
+// an inspection surface rather than as one more dock or rail.
 
 // helpKey is one binding as the pane shows it: the whole press, chord
 // included, and what it does.
@@ -39,7 +40,14 @@ type helpComponent struct {
 	purpose string
 	// moves are the keys that act on the whole component rather than on one
 	// of its rows, drawn in their own section ahead of the rest.
-	moves   []helpKey
+	moves []helpKey
+	// values are the labels a readout can show, drawn in their own section
+	// after the purpose. The mode pill's states are not keys, so they are
+	// listed here rather than among the bindings.
+	values []helpKey
+	// rows are the current members of a group, drawn as a list under their own
+	// heading: the pills the centre drew, and the entries it had no room for.
+	rows    []helpKey
 	keys    []helpKey
 	allKeys []helpKey
 	cli     []string
@@ -315,8 +323,8 @@ func (m *OS) helpKeys(actions ...string) []helpKey {
 
 // helpRailWideKeys are the moves that act on a rail as a whole rather than on
 // one row: putting the rail away and putting the keyboard into it. They are the
-// rail's own keys, live once help mode is left, so every rail component gives
-// them their own section rather than folding them into its focused keys.
+// rail's own keys, live with help mode up as well, so every rail component
+// gives them their own section rather than folding them into its focused keys.
 func (m *OS) helpRailWideKeys(other bool) []helpKey {
 	action := "prefix_toggle_sidebar"
 	toggleDesc := "Toggle this rail"
@@ -427,8 +435,8 @@ func (m *OS) buildHelpComponents() []helpComponent {
 
 // helpRailComponents adds the legacy rail and, when the opposite edge is
 // configured, its rail. A hidden rail still gets a component: it has no
-// rectangle to hover, but Tab can reach it, and s (or S for the opposite edge)
-// shows it from inside help mode.
+// rectangle to hover, but Shift+Tab can reach it, and its toggle chord works
+// from inside help mode, which is how the rail comes back with the pane open.
 func (m *OS) helpRailComponents() []helpComponent {
 	if m.NoRail {
 		return nil
@@ -490,9 +498,9 @@ func (m *OS) helpRailComponent(edge sidebarEdge, width int, shown, other bool) [
 
 	purpose := "The session rail is the column beside the panes. It lists the sessions on this machine and on other hosts, the panes of the session it is following, the agents that need a person, the files below the focused pane, and the controls that add and collapse."
 	if !shown {
-		// Help mode explains the layout, it does not rearrange it, so the way
-		// back to a hidden rail is to leave the mode first.
-		purpose = "This rail is hidden, so it has no rectangle to hover. Leave help with esc, press " + helpRailToggleLabel(wide) + " to show it, then open help again. " + purpose
+		// Help mode reads only its navigation keys, so the toggle it lists
+		// works from here; the pane stays up and redraws around the rail.
+		purpose = "This rail is hidden, so it has no rectangle to hover. Press " + helpRailToggleLabel(wide) + " to show it, and the pane follows the layout as it changes. " + purpose
 	}
 	keys := m.helpScopedKeys(config.ScopeSidebar, "activate", "cursor_down", "cursor_up", "collapse", "expand", "section", "new_session", "new_window")
 	keys = helpCap(keys, 7)
@@ -670,11 +678,11 @@ func (m *OS) helpDockComponents() []helpComponent {
 			image.Rect(m.dockOverflowHit.X0, m.dockOverflowHit.Y, m.dockOverflowHit.X1, m.dockOverflowHit.Y+1)))
 	}
 
-	names := make([]string, 0, len(m.dockCustomHits))
-	for _, hit := range m.dockCustomHits {
-		names = append(names, hit.Name)
-	}
-	sort.Strings(names)
+	// Every named cell the dock drew becomes one part, in draw order, so the
+	// count in the header is the number of parts a hover or Shift+Up reaches.
+	// The grouped parts above were recorded from their own unions; a cell that
+	// belongs to one of them (the workspace strip, a minimized entry) is
+	// skipped here rather than explaining the same thing twice.
 	seen := map[string]bool{
 		"workspaces":       true,
 		"windows":          true,
@@ -682,19 +690,13 @@ func (m *OS) helpDockComponents() []helpComponent {
 		"session-controls": true,
 		"overflow":         true,
 	}
-	for _, name := range names {
-		if seen[name] {
+	for _, hit := range m.dockHelpHits {
+		if seen[hit.Name] || hit.X1 <= hit.X0 {
 			continue
 		}
-		seen[name] = true
-		for _, hit := range m.dockCustomHits {
-			if hit.Name != name {
-				continue
-			}
-			out = append(out, m.helpDockCellComponent(name, dock.id,
-				image.Rect(hit.X0, hit.Y, hit.X1, hit.Y+1)))
-			break
-		}
+		seen[hit.Name] = true
+		out = append(out, m.helpDockCellComponent(hit.Name, dock.id,
+			image.Rect(hit.X0, hit.Y, hit.X1, hit.Y+1)))
 	}
 	return out
 }
@@ -780,7 +782,19 @@ func (m *OS) helpDockCellComponent(name, parent string, rect image.Rectangle) he
 		c.cli = []string{"tuios select-workspace 2", "tuios set-workspace-name 2 work", "tuios set-config appearance.dock_workspace_tabs true"}
 	case name == "windows":
 		c.title = "Minimized panes"
-		c.purpose = "One entry per minimized pane. Clicking an entry restores that pane; the overflow marker opens the list of entries the dock had no room for."
+		c.purpose = "The centre of the bar: one pill per minimized pane, in entry order. Clicking a pill restores that pane. The number in front of a pill is its position on the bar; the label is the pane's title. Entries the bar had no room for are held behind the overflow marker rather than dropped."
+		if len(m.dockCenterLabels) == 0 {
+			c.rows = append(c.rows, helpKey{press: "none", desc: "No pane is minimized, so the centre draws no pills."})
+		}
+		for i, label := range m.dockCenterLabels {
+			c.rows = append(c.rows, helpKey{press: fmt.Sprintf("%d", i+1), desc: label})
+		}
+		if n := m.dockOverflowHit.Overflowed; n > 0 {
+			c.rows = append(c.rows, helpKey{press: "...", desc: fmt.Sprintf("%d more did not fit; the marker opens them", n)})
+		}
+		if len(m.dockCenterParts) > 0 {
+			c.rows = append(c.rows, helpKey{press: "centre", desc: strings.Join(m.dockCenterParts, ", ")})
+		}
 		c.keys = helpCap(append(m.helpKeys("prefix_minimize", "minimize_prefix_restore_all"),
 			m.helpScopedKeys(config.ScopeSidebar, "activate")...), 6)
 		c.cli = []string{"tuios list-windows", "tuios restore-window <name>", "tuios set-config appearance.dock_compact true"}
@@ -822,13 +836,35 @@ func (m *OS) helpDockCellComponent(name, parent string, rect image.Rectangle) he
 		c.cli = []string{"tuios rename-session <name>", "tuios set-session-accent <colour>", "tuios ls"}
 	case name == "mode":
 		c.title = "Mode"
-		c.purpose = "The input mode: window management or terminal. It is the dock's answer to where a key will go, and it changes as the prefix menu opens."
-		c.keys = helpCap(m.helpKeys("prefix_window", "prefix_help"), 4)
-		c.cli = []string{"tuios set-config appearance.dock_mode_pill true", "tuios keybinds list"}
+		c.purpose = "The mode pill is the dock's answer to where a key will go, and it changes with the state that holds the keyboard. Its colour is the state's own: window management and terminal mode keep their icons (appearance.dock_mode_icon_window and appearance.dock_mode_icon_terminal), blue and green in the default theme. With tiling on and appearance.dock_mode_pill = tiling, it shows the tiling icon with the next split's direction after it. It is a readout, not a button."
+		c.values = []helpKey{
+			{press: "H", desc: "Tiling is on and the next split is stacked: the new pane takes a row, above or below."},
+			{press: "V", desc: "Tiling is on and the next split is side by side: the new pane takes a column, left or right."},
+			{press: "HOLD", desc: "The hold key has borrowed window mode, so window-mode keys act while it is held."},
+			{press: "HINTS", desc: "Hints mode owns the keyboard; the legend at the dock's other end lists its keys."},
+			{press: "SIDEBAR", desc: "The rail owns the keyboard, so the prefix and its keys act on the rail."},
+			{press: "NEST ...", desc: "Nest mode: keys go to the pane, and the named key turns tuios back on."},
+			{press: "MULTI", desc: "Multi-copy drives several panes; after a search it reads MULTI matched/total."},
+			{press: "row:col", desc: "The focused pane is in copy mode; the pill shows the cursor's row and column."},
+			{press: "lock glyph", desc: "Lock mode: every key but the leader goes to the focused pane."},
+			{press: "leader glyph", desc: "A prefix is armed and waits for its key; the pill takes the warning colour."},
+			{press: "Z", desc: "The workspace has a zoomed pane: one pane fills the box and the others are off screen."},
+		}
+		c.keys = helpCap(m.helpKeys("prefix_window", "prefix_help", "prefix_toggle_tiling"), 4)
+		c.cli = []string{
+			"tuios set-config appearance.dock_mode_pill input  # the mode icon while tiling",
+			"tuios set-config appearance.dock_mode_split_letter false",
+			"tuios set-config appearance.dock_prefix_indicator badge",
+			"tuios keybinds list",
+		}
 	case name == "trail":
-		c.title = "Trail"
-		c.purpose = "The trail cell records where this client has been: the panes and workspaces it visited, newest first. It is built into the dock and is not a command runner."
-		c.cli = []string{"tuios list-dock-components", "tuios config edit  # [dock] lists"}
+		c.title = "Workspace counter"
+		c.purpose = "The trail cell reads workspace:panes for the workspace on screen, the way 1:1 reads \"workspace 1, one pane\". The left number is the workspace; the right one is how many panes that workspace holds, minimized panes included and scratch panes excluded. On the workspace 2 with three panes it reads 2:3. It is a readout, not a button."
+		c.rows = []helpKey{
+			{press: "1:1", desc: "Workspace 1 holds one pane."},
+			{press: "2:3", desc: "Workspace 2 holds three panes."},
+		}
+		c.cli = []string{"tuios list-workspaces", "tuios list-dock-components", "tuios config edit  # [dock] lists"}
 	case name == "tape":
 		c.title = "Tape"
 		c.purpose = "The tape cell reports a tape playing in this session, with its status. It is drawn only while a tape is running."
@@ -1064,7 +1100,10 @@ func (m *OS) renderHelpMode() *lipgloss.Layer {
 	}
 	if len(body) > room {
 		footer = m.helpFooterLines(comps, cur, width, pal, true)
-		room = max(limit-len(header)-1-len(footer), 1)
+		// A short screen fills the footer first, so the marker that says the
+		// body continues sits with the title, which stays put while it scrolls.
+		room = max(limit-len(header)-1-len(footer)-1, 1)
+		header = append(header, m.helpScrollLine(len(body), room, width, pal))
 	}
 	m.helpScroll = min(max(m.helpScroll, 0), max(len(body)-room, 0))
 	visible := body[m.helpScroll:min(m.helpScroll+room, len(body))]
@@ -1087,6 +1126,17 @@ func (m *OS) renderHelpMode() *lipgloss.Layer {
 	x, y := m.placeHelpPane(cur.rect, boxW, boxH)
 	m.helpPaneRect = image.Rect(x, y, x+boxW, y+boxH)
 	return lipgloss.NewLayer(box).X(x).Y(y).Z(config.ZIndexWhichKey + 1).ID(helpLayerID)
+}
+
+// helpScrollLine is the marker that says the explanation continues past the
+// fold and that the wheel and the arrow keys move it. It carries the range on
+// screen, so the reader knows how much is left without counting.
+func (m *OS) helpScrollLine(total, room, width int, pal overlay.Palette) string {
+	from := min(m.helpScroll+1, total)
+	to := min(m.helpScroll+room, total)
+	text := fmt.Sprintf("lines %d-%d of %d · Up/Down or the wheel", from, to, total)
+	return overlay.Style(pal.Surface).Foreground(pal.FgMute).
+		Render(overlay.Truncate(text, max(width-4, 8)))
 }
 
 // helpLayerID is the compositor id of the help pane. It is what compose looks
@@ -1191,7 +1241,9 @@ func (m *OS) helpHeaderLines(comps []helpComponent, cur *helpComponent, width in
 // the pane explains is the one holding the keyboard. A hotkey list is only
 // worth reading against the state it will run in: the rail's keys do nothing
 // while a pane has the keyboard, and a window-mode key typed in terminal mode
-// is text for the shell.
+// is text for the shell. A rail reads its keys in either mode, so its line
+// gives only whether it holds the keyboard: the mode would be noise the
+// reader has to discard on every visit.
 func (m *OS) helpStateLine(cur *helpComponent, pal overlay.Palette) string {
 	mode := "window mode"
 	if m.Mode == TerminalMode {
@@ -1199,6 +1251,12 @@ func (m *OS) helpStateLine(cur *helpComponent, pal overlay.Palette) string {
 	}
 	muted := overlay.Style(pal.Surface).Foreground(pal.FgMute)
 	focused, focusable := m.helpFocus(cur)
+	if strings.HasPrefix(cur.id, "rail:") {
+		if focused {
+			return overlay.Style(pal.Surface).Foreground(pal.Success).Render("focused")
+		}
+		return overlay.Style(pal.Surface).Foreground(pal.FgDim).Render("not focused")
+	}
 	switch {
 	case focused:
 		return muted.Render(mode+" · ") +
@@ -1262,6 +1320,16 @@ func (m *OS) helpSectionLines(cur *helpComponent, width int, pal overlay.Palette
 		lines = append(lines, dim.Bold(true).Render("Toggle/focus"))
 		lines = append(lines, helpKeyLines(cur.moves, inner, key, body)...)
 	}
+	if len(cur.values) > 0 {
+		lines = append(lines, "")
+		lines = append(lines, dim.Bold(true).Render("Possible values"))
+		lines = append(lines, helpKeyLines(cur.values, inner, key, body)...)
+	}
+	if len(cur.rows) > 0 {
+		lines = append(lines, "")
+		lines = append(lines, dim.Bold(true).Render("On the bar"))
+		lines = append(lines, helpKeyLines(cur.rows, inner, key, body)...)
+	}
 	if len(cur.keys) > 0 {
 		lines = append(lines, "")
 		// The rail's keys are live only while the rail holds the keyboard,
@@ -1298,6 +1366,7 @@ func (m *OS) helpFooterLines(comps []helpComponent, cur *helpComponent, width in
 	bg := pal.Surface
 	key := overlay.Style(bg).Foreground(pal.Success).Bold(true)
 	muted := overlay.Style(bg).Foreground(pal.FgMute)
+	title := overlay.Style(bg).Foreground(pal.FgDim).Bold(true)
 
 	type hint struct{ press, desc string }
 	hints := []hint{{"Shift+Tab", "components"}}
@@ -1308,12 +1377,12 @@ func (m *OS) helpFooterLines(comps []helpComponent, cur *helpComponent, width in
 		hints = append(hints, hint{"Shift+Up/Down", "in and out"})
 	}
 	if scrollable {
-		hints = append(hints, hint{"Up/Down", "scroll"})
+		hints = append(hints, hint{"Up/Down", "scroll, or the wheel"})
 	}
 	hints = append(hints, hint{"h", "all keys"}, hint{"Esc", "exit"})
 
 	const gap = "    "
-	var lines []string
+	lines := []string{title.Render("Navigating help")}
 	var line strings.Builder
 	lineWidth := 0
 	for _, h := range hints {

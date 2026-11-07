@@ -194,10 +194,13 @@ says what the component is for, the hotkeys that act on it, and the `tuios`
 commands that change it. A line above the keys names the mode the keys belong
 to, window or terminal, and whether the component holds the keyboard, so the
 list is read in the state it will run in; a component that never takes the
-keyboard, such as the dock, says so. `Ctrl+B ?` still opens the full key list.
+keyboard, such as the dock, says so. A rail reads its keys in either mode, so
+its line names only whether it holds the keyboard. `Ctrl+B ?` still opens the full key list.
 
-Help mode only reads. Nothing it is bound to changes the layout it explains:
-the rail's own toggles are listed, not run, so leave the mode to use them.
+Help mode is a view, not a mode. It reads only the keys in the table below;
+every other key reaches the app as if the pane were not up, so the rail's own
+toggles, a workspace switch and a command for the focused pane run while you
+read, and the pane redraws around the layout they leave.
 
 | Key | What it does |
 | --- | --- |
@@ -209,10 +212,13 @@ the rail's own toggles are listed, not run, so leave the mode to use them.
 | `esc`, `Shift+F1` | Leave help mode. |
 
 A hidden rail still has an entry in the rotation, marked `(hidden)`; its pane
-names the chord that brings it back once you leave. While help mode is on it
-owns the keyboard and the pointer: no letter reaches a pane, a click acts on
-nothing but the selected component, and the wheel scrolls the pane and nothing
-else. Everything but that component and the explaining pane is dimmed by
+names the chord that brings it back, and that chord works from here. Help mode
+keeps the pointer while it is up: a click picks the component under it and does
+nothing else, and the wheel scrolls the explanation. A panel opened over it
+takes the pointer and the keys. Because the pane is a view, a bare `h`, `Up` or
+`Down` belongs to it even over a terminal pane: leave help to type them.
+
+Everything but that component and the explaining pane is dimmed by
 `appearance.modal_dim` (default `30`), so the component under the pane stays the
 bright thing on screen; `0` turns the dimming off. The default is
 `prefix_help_mode = ["h"]` in
