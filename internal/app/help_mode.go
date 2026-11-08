@@ -62,6 +62,24 @@ type helpComponent struct {
 // EnterHelpMode turns help mode on and selects the first component on screen.
 // The leader chord that reaches it, or Shift+F1, has already closed every menu.
 func (m *OS) EnterHelpMode() {
+	m.enterHelpMode("")
+}
+
+// EnterHelpModeOn turns help mode on with the named component selected when it
+// is on screen. The dock's ? control uses EnterHelpModeForDockCell so the
+// button that opens the explanation is what the explanation is about.
+func (m *OS) EnterHelpModeOn(id string) {
+	m.enterHelpMode(id)
+}
+
+// EnterHelpModeForDockCell turns help mode on with the named dock cell
+// selected. The dock is a component of its own with one child per cell, so the
+// cell's id is the dock's plus its name.
+func (m *OS) EnterHelpModeForDockCell(name string) {
+	m.EnterHelpModeOn(dockHelpTarget(name))
+}
+
+func (m *OS) enterHelpMode(id string) {
 	m.ShowHelp = false
 	m.CloseContextMenu()
 	m.CloseHints()
@@ -75,7 +93,10 @@ func (m *OS) EnterHelpMode() {
 	m.helpComps = nil
 	m.HelpTouch()
 	comps := m.helpComponents()
-	if len(comps) > 0 {
+	switch {
+	case id != "" && helpIndex(comps, id) >= 0:
+		m.helpTarget = id
+	case len(comps) > 0:
 		m.helpTarget = comps[0].id
 	}
 	m.helpInvalidate()
@@ -904,11 +925,15 @@ func (m *OS) helpDockComponent() helpComponent {
 	}
 }
 
+// dockHelpTarget is the help id of a named dock cell. A cell is a child of the
+// dock component, and its id says so.
+func dockHelpTarget(name string) string { return "dock/" + name }
+
 // helpDockCellComponent explains one dock cell. Custom and plugin cells carry
 // the command or the plugin they came from; the built-in cells name their own
 // setting.
 func (m *OS) helpDockCellComponent(name, parent string, rect image.Rectangle) helpComponent {
-	c := helpComponent{id: "dock/" + name, parent: parent, rect: rect}
+	c := helpComponent{id: dockHelpTarget(name), parent: parent, rect: rect}
 	switch {
 	case strings.HasPrefix(name, config.DockCustomPrefix):
 		key := strings.TrimPrefix(name, config.DockCustomPrefix)
@@ -989,7 +1014,7 @@ func (m *OS) helpDockCellComponent(name, parent string, rect image.Rectangle) he
 		c.cli = []string{"tuios rename-session <name>", "tuios set-session-accent <colour>", "tuios ls"}
 	case name == "help":
 		c.title = "Help"
-		c.purpose = "The ? control: a click opens this explanation for whatever the pointer is over, and a click while it is up closes it. It does the same thing the keys do, so a person who does not know the chord can still find the explanation, and it is the cell that teaches its own key."
+		c.purpose = "The ? control: a click opens this explanation, turned to the control itself, so the button answers what it is and how help mode behaves; a click while it is up closes it. It does the same thing the keys do, so a person who does not know the chord can still find the explanation, and it is the cell that teaches its own key."
 		c.keys = helpCap(m.helpKeys("prefix_help_mode", "toggle_help_mode"), 4)
 		if exit := m.helpOwnKey(config.ActionHelpExit); exit != "" {
 			c.rows = append(c.rows, helpKey{press: exit, desc: "Close the explanation from the keyboard"})
