@@ -224,8 +224,13 @@ A hidden rail still has an entry in the rotation, marked `(hidden)`; its pane
 names the chord that brings it back, and that chord works from here. Help mode
 keeps the pointer while it is up: a click picks the component under it and does
 nothing else, and the wheel scrolls the explanation. A panel opened over it
-takes the pointer and the keys. Because the pane is a view, a bare `h`, `Up` or
-`Down` belongs to it even over a terminal pane: leave help to type them.
+takes the pointer and the keys.
+
+A key help mode does not bind does what it does without the pane, and the pane
+steps out of sight while it runs: it comes back after two seconds, and any of
+the navigation keys brings it back at once. That is how a bare `h` or `Up` can
+belong to the pane's explanation over a terminal and still leave the keyboard
+free; `Shift+Esc` is the way out for good.
 
 Everything but that component and the explaining pane is dimmed by
 `appearance.modal_dim` (default `30`), so the component under the pane stays the

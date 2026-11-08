@@ -44,8 +44,10 @@ func (m *OS) paneCursor() (cur *tea.Cursor, hidden bool) {
 
 	// Help mode owns the keyboard and its pane explains the target instead of
 	// covering it, so the pane's own caret would keep blinking beside the
-	// explanation as if the next letter were going to the shell.
-	if m.HelpMode {
+	// explanation as if the next letter were going to the shell. While the
+	// explanation is hidden for a key that ran, the keyboard is that key's
+	// again, so the caret comes back with it.
+	if m.HelpMode && !m.helpHidden {
 		return nil, false
 	}
 
