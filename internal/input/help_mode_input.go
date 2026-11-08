@@ -52,12 +52,15 @@ func handleHelpModeKey(msg tea.KeyPressMsg, o *app.OS) (*app.OS, tea.Cmd, bool) 
 	case config.ActionHelpNext:
 		noteHelpAction(o, action)
 		o.HelpNext(1)
-	case config.ActionHelpDeeper:
+	case config.ActionHelpPrev:
 		noteHelpAction(o, action)
-		o.HelpDeeper()
-	case config.ActionHelpShallower:
+		o.HelpNext(-1)
+	case config.ActionHelpPartNext:
 		noteHelpAction(o, action)
-		o.HelpShallower()
+		o.HelpPart(1)
+	case config.ActionHelpPartPrev:
+		noteHelpAction(o, action)
+		o.HelpPart(-1)
 	case config.ActionHelpScrollUp:
 		noteHelpAction(o, action)
 		o.HelpScroll(-1)

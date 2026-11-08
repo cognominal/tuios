@@ -229,8 +229,9 @@ func Scopes(leader string) []Scope {
 		},
 		{
 			// Help mode reads these and passes every other key to the app, so
-			// they are live only while its pane is up: shift+tab says next
-			// component there and nothing elsewhere.
+			// they are live only while its pane is up: shift+left and
+			// shift+right walk the components there and say nothing
+			// elsewhere.
 			ID: ScopeHelp, Name: "Help mode",
 			Sections: []string{SectionHelp},
 			Reaches:  ReachModal,

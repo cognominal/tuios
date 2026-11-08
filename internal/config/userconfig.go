@@ -1116,11 +1116,11 @@ type KeybindingsConfig struct {
 	// being typed: its hunk and file motions. See getDefaultReviewKeybinds.
 	Review map[string][]string `toml:"review"`
 	// Help binds are live only while help mode is up, and are read before
-	// anything else the pane would route: walking the components, moving in
-	// and out of one, scrolling the explanation, showing the whole key set and
-	// leaving. They are kept out of buildMappings for the same reason the
-	// rail's are: flattening them would let shift+tab mean "next component"
-	// with no help on screen. See getDefaultHelpKeybinds.
+	// anything else the pane would route: walking the components and their
+	// parts, scrolling the explanation, showing the whole key set and leaving.
+	// They are kept out of buildMappings for the same reason the rail's are:
+	// flattening them would let shift+left mean "previous component" with no
+	// help on screen. See getDefaultHelpKeybinds.
 	Help map[string][]string `toml:"help"`
 	// GUI binds are read only by a native GUI client (tuios-gpui), through
 	// the GUI bridge's keybinds event. They are desktop chords that need no

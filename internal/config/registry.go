@@ -1115,8 +1115,9 @@ var ActionDescriptions = map[string]string{
 	// Help mode's own navigation, live only while it is up. See
 	// getDefaultHelpKeybinds.
 	"help_next":        "Next component in the explanation",
-	"help_deeper":      "Into the selected component's parts",
-	"help_shallower":   "Back out to the component above the part",
+	"help_prev":        "Previous component in the explanation",
+	"help_part_next":   "Next part of the selected component",
+	"help_part_prev":   "Previous part of the selected component",
 	"help_scroll_up":   "Scroll the explanation up",
 	"help_scroll_down": "Scroll the explanation down",
 	"help_keys":        "Show or hide all of the component's keys",

@@ -16,9 +16,10 @@ import (
 
 // Help mode is the hover help the leader then h opens. It is not the help
 // overlay: nothing is listed up front, and it reads only the keys it binds.
-// The pointer, or Shift+Tab, moves between the components on screen;
-// Shift+Up and Shift+Down move into and out of a component that has parts; h
-// shows the whole keybinding set of the component selected; Shift+Esc leaves.
+// The pointer, or Shift+Right and Shift+Left, moves between the components on
+// screen; Shift+Down and Shift+Up walk the parts of one, in the order the frame
+// draws them; h shows the whole keybinding set of the component selected;
+// Shift+Esc leaves.
 // The rest of the keyboard is the app's, so a chord the pane lists runs while
 // the pane explains it, and the pane follows the layout that chord leaves. A
 // key that runs this way also steps the pane out of sight for a moment, so the
@@ -185,7 +186,7 @@ func (m *OS) helpComponents() []helpComponent {
 }
 
 // HelpNext moves to the next top-level component, or the one delta places
-// back. Shift+Tab calls it.
+// back, wrapping at the ends. Shift+Right and Shift+Left call it.
 func (m *OS) HelpNext(delta int) {
 	m.HelpResume()
 	comps := m.helpComponents()
@@ -218,52 +219,48 @@ func (m *OS) HelpNext(delta int) {
 	m.helpInvalidate()
 }
 
-// HelpDeeper moves Shift+Down: into the selected component's first part, or to
-// its next sibling once inside one.
-func (m *OS) HelpDeeper() {
+// HelpPart moves through the selected component's parts in the order the frame
+// draws them, wrapping at the ends: Shift+Down goes forward and Shift+Up back.
+// On the component itself the walk enters its first or last part; inside a
+// part it stays among that part's siblings, so the dock's cells are walked
+// left to right and the rail's sections top to bottom.
+func (m *OS) HelpPart(delta int) {
 	m.HelpResume()
 	comps := m.helpComponents()
 	cur := helpIndex(comps, m.helpTarget)
 	if cur < 0 {
-		m.HelpNext(1)
+		m.HelpNext(delta)
 		return
 	}
-	if kids := helpChildren(comps, comps[cur].id); len(kids) > 0 {
-		m.helpTarget = kids[0].id
-		m.helpScroll = 0
-		m.helpInvalidate()
+	parts := helpChildren(comps, comps[cur].id)
+	if len(parts) == 0 && comps[cur].parent != "" {
+		parts = helpChildren(comps, comps[cur].parent)
+	}
+	if len(parts) == 0 {
 		return
 	}
-	if comps[cur].parent == "" {
-		return
+	idx := -1
+	for i, part := range parts {
+		if part.id == comps[cur].id {
+			idx = i
+			break
+		}
 	}
-	if next, ok := helpSibling(comps, comps[cur], 1); ok {
-		m.helpTarget = next.id
-		m.helpScroll = 0
-		m.helpInvalidate()
+	if idx < 0 {
+		// The component itself is selected: the direction picks the end of
+		// the walk, so Shift+Down enters the first part and Shift+Up the last.
+		if delta < 0 {
+			idx = len(parts) - 1
+		} else {
+			idx = 0
+		}
+	} else {
+		idx = (idx + delta) % len(parts)
+		if idx < 0 {
+			idx += len(parts)
+		}
 	}
-}
-
-// HelpShallower moves Shift+Up: to the previous sibling inside a component, or
-// back out to the component itself from its first part.
-func (m *OS) HelpShallower() {
-	m.HelpResume()
-	comps := m.helpComponents()
-	cur := helpIndex(comps, m.helpTarget)
-	if cur < 0 {
-		m.HelpNext(-1)
-		return
-	}
-	if comps[cur].parent == "" {
-		return
-	}
-	if prev, ok := helpSibling(comps, comps[cur], -1); ok {
-		m.helpTarget = prev.id
-		m.helpScroll = 0
-		m.helpInvalidate()
-		return
-	}
-	m.helpTarget = comps[cur].parent
+	m.helpTarget = parts[idx].id
 	m.helpScroll = 0
 	m.helpInvalidate()
 }
@@ -444,21 +441,6 @@ func helpChildren(comps []helpComponent, id string) []helpComponent {
 	return out
 }
 
-func helpSibling(comps []helpComponent, cur helpComponent, delta int) (helpComponent, bool) {
-	sibs := helpChildren(comps, cur.parent)
-	for i, c := range sibs {
-		if c.id != cur.id {
-			continue
-		}
-		j := i + delta
-		if j < 0 || j >= len(sibs) {
-			return helpComponent{}, false
-		}
-		return sibs[j], true
-	}
-	return helpComponent{}, false
-}
-
 // helpKeys is the first press of each named action, with the description the
 // rest of the interface shows for it.
 func (m *OS) helpKeys(actions ...string) []helpKey {
@@ -604,13 +586,50 @@ func (m *OS) buildHelpComponents() []helpComponent {
 	comps = append(comps, m.helpPaneComponents()...)
 	comps = append(comps, m.helpDockComponents()...)
 	comps = append(comps, m.helpDesktopComponent())
-	return comps
+	return helpOrderParts(comps)
+}
+
+// helpOrderParts lists each component's parts in the order the frame draws
+// them, so the part keys walk the screen the way the eye does: the dock's
+// cells left to right, the rail's sections down the column, a pane's title bar
+// before its body. A part is a child of a top-level component; the order is
+// the rectangle's, with the title breaking a tie between two parts that share
+// a corner, which is what keeps cells the last frame did not paint stable.
+func helpOrderParts(comps []helpComponent) []helpComponent {
+	byParent := map[string][]helpComponent{}
+	for _, c := range comps {
+		if c.parent != "" {
+			byParent[c.parent] = append(byParent[c.parent], c)
+		}
+	}
+	for parent := range byParent {
+		parts := byParent[parent]
+		slices.SortStableFunc(parts, func(a, b helpComponent) int {
+			if a.rect.Min.Y != b.rect.Min.Y {
+				return a.rect.Min.Y - b.rect.Min.Y
+			}
+			if a.rect.Min.X != b.rect.Min.X {
+				return a.rect.Min.X - b.rect.Min.X
+			}
+			return strings.Compare(a.title, b.title)
+		})
+	}
+	out := make([]helpComponent, 0, len(comps))
+	for _, c := range comps {
+		if c.parent != "" {
+			continue
+		}
+		out = append(out, c)
+		out = append(out, byParent[c.id]...)
+	}
+	return out
 }
 
 // helpRailComponents adds the legacy rail and, when the opposite edge is
 // configured, its rail. A hidden rail still gets a component: it has no
-// rectangle to hover, but Shift+Tab can reach it, and its toggle chord works
-// from inside help mode, which is how the rail comes back with the pane open.
+// rectangle to hover, but Shift+Right and Shift+Left reach it, and its toggle
+// chord works from inside help mode, which is how the rail comes back with the
+// pane open.
 func (m *OS) helpRailComponents() []helpComponent {
 	if m.NoRail {
 		return nil
@@ -853,7 +872,7 @@ func (m *OS) helpDockComponents() []helpComponent {
 	}
 
 	// Every named cell the dock drew becomes one part, in draw order, so the
-	// count in the header is the number of parts a hover or Shift+Up reaches.
+	// count in the header is the number of parts the part keys walk.
 	// The grouped parts above were recorded from their own unions; a cell that
 	// belongs to one of them (the workspace strip, a minimized entry) is
 	// skipped here rather than explaining the same thing twice.
@@ -1421,7 +1440,7 @@ func (m *OS) helpHeaderLines(comps []helpComponent, cur *helpComponent, width in
 	muted := overlay.Style(bg).Foreground(pal.FgMute)
 
 	var lines []string
-	// Name how many parts Shift+Down can reach, so a component worth walking
+	// Name how many parts the part keys walk, so a component worth walking
 	// into says so before the key is pressed.
 	heading := cur.title
 	if kids := len(helpChildren(comps, cur.id)); kids > 0 {
@@ -1620,19 +1639,26 @@ func (m *OS) helpFooterLines(comps []helpComponent, cur *helpComponent, width in
 			hints = append(hints, hint{press, desc})
 		}
 	}
-	own(config.ActionHelpNext, "components")
-	// Shift+Down and Shift+Up do nothing on a top-level component with no
-	// parts: there is nowhere deeper to go and nothing to come back out of.
-	// Naming them there promises a move the keys cannot make.
+	prev, next := m.helpOwnKey(config.ActionHelpPrev), m.helpOwnKey(config.ActionHelpNext)
+	switch {
+	case prev != "" && next != "":
+		hints = append(hints, hint{prev + "/" + next, "components"})
+	case prev != "":
+		hints = append(hints, hint{prev, "previous component"})
+	case next != "":
+		hints = append(hints, hint{next, "next component"})
+	}
+	// The part keys do nothing on a top-level component with no parts, so
+	// naming them there promises a move the keys cannot make.
 	if cur.parent != "" || len(helpChildren(comps, cur.id)) > 0 {
-		up, down := m.helpOwnKey(config.ActionHelpShallower), m.helpOwnKey(config.ActionHelpDeeper)
+		up, down := m.helpOwnKey(config.ActionHelpPartPrev), m.helpOwnKey(config.ActionHelpPartNext)
 		switch {
 		case up != "" && down != "":
-			hints = append(hints, hint{up + "/" + down, "in and out"})
+			hints = append(hints, hint{up + "/" + down, "parts"})
 		case up != "":
-			hints = append(hints, hint{up, "out"})
+			hints = append(hints, hint{up, "previous part"})
 		case down != "":
-			hints = append(hints, hint{down, "in"})
+			hints = append(hints, hint{down, "next part"})
 		}
 	}
 	if scrollable {

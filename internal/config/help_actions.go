@@ -7,14 +7,16 @@ package config
 // would do the same thing everywhere. See help_mode.go in internal/app and
 // help_mode_input.go in internal/input.
 const (
-	// ActionHelpNext walks the components on screen.
+	// ActionHelpNext and ActionHelpPrev walk the top-level components on
+	// screen, wrapping at the ends.
 	ActionHelpNext = "help_next"
-	// ActionHelpDeeper goes into the selected component's parts, or to its
-	// next sibling once inside one.
-	ActionHelpDeeper = "help_deeper"
-	// ActionHelpShallower comes back out to the previous sibling, or to the
-	// component itself.
-	ActionHelpShallower = "help_shallower"
+	ActionHelpPrev = "help_prev"
+	// ActionHelpPartNext and ActionHelpPartPrev walk the parts of the selected
+	// component in the order the frame draws them: left to right along the
+	// dock, down the rail. They wrap too, and on the component itself they
+	// enter its first or last part.
+	ActionHelpPartNext = "help_part_next"
+	ActionHelpPartPrev = "help_part_prev"
 	// ActionHelpScrollUp and ActionHelpScrollDown move the explanation where
 	// it overflows; the title and the footer stay put.
 	ActionHelpScrollUp   = "help_scroll_up"
@@ -32,9 +34,10 @@ const (
 // explanation is gone, and h is the only letter the pane keeps.
 func getDefaultHelpKeybinds() map[string][]string {
 	return map[string][]string{
-		ActionHelpNext:       {"shift+tab"},
-		ActionHelpDeeper:     {"shift+down"},
-		ActionHelpShallower:  {"shift+up"},
+		ActionHelpNext:       {"shift+right"},
+		ActionHelpPrev:       {"shift+left"},
+		ActionHelpPartNext:   {"shift+down"},
+		ActionHelpPartPrev:   {"shift+up"},
 		ActionHelpScrollUp:   {"up"},
 		ActionHelpScrollDown: {"down"},
 		ActionHelpKeys:       {"h"},
