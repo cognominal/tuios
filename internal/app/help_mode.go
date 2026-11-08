@@ -1459,7 +1459,7 @@ func (m *OS) helpHeaderLines(comps []helpComponent, cur *helpComponent, width in
 		lines = append(lines, muted.Render(overlay.Truncate(
 			"a help key brings it back at once.", inner)))
 		lines = append(lines, muted.Render(overlay.Truncate(
-			"esc alone is ignored: it is the missed chord.", inner)))
+			"esc alone reaches the app but leaves this count alone.", inner)))
 	}
 	return lines
 }

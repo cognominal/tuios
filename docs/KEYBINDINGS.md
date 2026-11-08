@@ -247,9 +247,10 @@ A key help mode does not bind does what it does without the pane, and the pane
 steps out of sight while it runs: it comes back after two seconds, and any of
 the navigation keys brings it back at once. That is how a bare `h` or `Up` can
 belong to the pane's explanation over a terminal and still leave the keyboard
-free; `Shift+Esc` is the way out for good. A bare `esc` is the exception: while
-the pane is up it is ignored, because it is usually `Shift+Esc` typed without
-the shift, and passing it on would close a dialog under the reader.
+free; `Shift+Esc` is the way out for good. A bare `esc` is the exception only
+to the countdown: it reaches the app and hides the pane for its two seconds
+like any other key, because it is usually `Shift+Esc` typed without the shift,
+but it does not restart the idle count.
 
 Everything but that component and the explaining pane is dimmed by
 `appearance.modal_dim` (default `30`), so the component under the pane stays the
