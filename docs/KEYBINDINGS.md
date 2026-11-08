@@ -196,7 +196,10 @@ The pane says what the component is for, the hotkeys that act on it, and the
 to, window or terminal, and whether the component holds the keyboard, so the
 list is read in the state it will run in; a component that never takes the
 keyboard, such as the dock, says so. A rail reads its keys in either mode, so
-its line names only whether it holds the keyboard. `Ctrl+B ?` still opens the full key list.
+its line names only whether it holds the keyboard. A component that does not
+hold the keyboard has its key list dimmed: those keys act on whatever holds the
+focus until the component takes it.
+`Ctrl+B ?` still opens the full key list.
 
 Help mode is a view, not a mode. It reads only the keys in the table below;
 every other key reaches the app as if the pane were not up, so the rail's own
