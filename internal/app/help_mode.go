@@ -97,7 +97,10 @@ func (m *OS) ExitHelpMode() {
 // in use. A control that opened the pane stays lit while the pane is up, so
 // the bar answers "where did this come from" without a second glance.
 func (m *OS) helpControlLit() bool {
-	return m.HelpMode
+	if m.HelpMode {
+		return true
+	}
+	return !m.helpBlinkUntil.IsZero() && m.helpBlinkOn
 }
 
 // helpInvalidate makes the next frame compose rather than serve the last one.

@@ -977,6 +977,11 @@ func (m *OS) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if m.frameRate.program != nil && (!m.renderSkipped || isPersonInput(msg) || m.flushWhileIdle(msg)) {
 		cmd = tea.Batch(cmd, flushCmd)
 	}
+	// The first-run blink of the dock's help control advances on its own tick,
+	// and stops when the blink ends. See help_first_run.go.
+	if bc := m.helpBlinkTick(); bc != nil {
+		cmd = tea.Batch(cmd, bc)
+	}
 	return model, cmd
 }
 
@@ -2946,6 +2951,10 @@ func (m *OS) handleMsg(msg tea.Msg) (model tea.Model, cmd tea.Cmd) {
 
 	case helpShowMsg:
 		m.showHelp(msg)
+		return m, nil
+
+	case helpBlinkMsg:
+		m.advanceHelpBlink()
 		return m, nil
 
 	case displayRateMsg:
