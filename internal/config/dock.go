@@ -102,9 +102,9 @@ var dockFixedSides = map[string]string{
 // wherever it is listed.
 func DockFixedSide(name string) string { return dockFixedSides[name] }
 
-// Default dock arrangements. These reproduce the bar exactly as it was drawn
-// before the lists existed, which is what lets a session with no [dock] table
-// stay byte-for-byte unchanged.
+// Default dock arrangements. These are the bar a session with no [dock] table
+// gets: the arrangement the lists were introduced to reproduce, with the help
+// control added since, because a control nobody is told about is not a control.
 //
 // Each built-in keeps whatever conditional it always had (the strip needs two
 // workspaces, the meters need show_cpu), so membership here is a second gate

@@ -1648,7 +1648,7 @@ refresh  = "event:after-focus-change"
 on-click = "tuios new-window log -- git log --oneline -20"
 ```
 
-The lists above are the default: omit the whole table and the bar is unchanged.
+The lists above are the default: omit the whole table and the bar is this one.
 
 The clock draws hours and minutes (`15:04`) unless `dock.clock.format` or
 `appearance.clock_format` sets another Go time layout. To show seconds, set
