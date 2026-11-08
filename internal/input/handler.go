@@ -448,6 +448,15 @@ func HandleKeyPress(msg tea.KeyPressMsg, o *app.OS) (*app.OS, tea.Cmd) {
 	// run while it is up, so pressing the rail's toggle beside the explanation
 	// changes what the next frame explains.
 	if o.HelpMode {
+		// A bare esc is the key a hand reaches for when it means the shifted
+		// chord that closes the pane. It is often typed by mistake, so while
+		// the pane is up it is read as a missed chord: it neither starts the
+		// countdown again nor runs on the screen underneath, and the pane does
+		// not step aside for it. The chord that closes is still the configured
+		// help_exit, Shift+Esc by default.
+		if msg.String() == "esc" {
+			return o, nil
+		}
 		// A key is an interaction even when the key is not help's: the reader
 		// is still working, so the countdown in the title starts again.
 		o.HelpTouch()

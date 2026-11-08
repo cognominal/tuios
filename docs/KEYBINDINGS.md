@@ -209,7 +209,8 @@ read, and the pane redraws around the layout they leave. The leader opens its
 menu over the screen rather than beside the pane: the explanation stands aside
 while the menu is up, and the chord that closes it leaves the pane hidden for
 the same two seconds as any other key. The title carries an idle countdown:
-every key and every click starts it again, and with no interaction the pane
+every key and every click starts it again, except a bare `esc`, which is
+usually the shifted chord typed by mistake, and with no interaction the pane
 closes itself after thirty seconds, so it answers a question and then leaves
 rather than sitting over the screen until dismissed by hand. The `?` control's
 own page is where the pane states that rule; every other page keeps to the
@@ -246,7 +247,9 @@ A key help mode does not bind does what it does without the pane, and the pane
 steps out of sight while it runs: it comes back after two seconds, and any of
 the navigation keys brings it back at once. That is how a bare `h` or `Up` can
 belong to the pane's explanation over a terminal and still leave the keyboard
-free; `Shift+Esc` is the way out for good.
+free; `Shift+Esc` is the way out for good. A bare `esc` is the exception: while
+the pane is up it is ignored, because it is usually `Shift+Esc` typed without
+the shift, and passing it on would close a dialog under the reader.
 
 Everything but that component and the explaining pane is dimmed by
 `appearance.modal_dim` (default `30`), so the component under the pane stays the
