@@ -1447,14 +1447,18 @@ func (m *OS) helpHeaderLines(comps []helpComponent, cur *helpComponent, width in
 		lines = append(lines, muted.Render(overlay.Truncate(path, inner)))
 	}
 	lines = append(lines, m.helpStateLine(cur, pal))
-	// The pane is a view, not a mode, and that is the one thing about it a
-	// reader cannot see until they press a key and the pane goes away. Say it
-	// here, where every component's explanation carries it, and say what brings
-	// the pane back, so the disappearance reads as a design and not a bug.
-	lines = append(lines, muted.Render(overlay.Truncate(
-		"Other keys reach the app and hide this pane;", inner)))
-	lines = append(lines, muted.Render(overlay.Truncate(
-		"a help key brings it back at once.", inner)))
+	if cur.id == dockHelpTarget(config.DockComponentHelp) {
+		// The pane is a view, not a mode, and that is the one thing about it
+		// a reader cannot see until they press a key and the pane goes away.
+		// It belongs to the page about the pane itself, not to every page: a
+		// reader explaining a rail or a pane is reading that component, and
+		// the rule about help mode is noise there. The ? page is also the one
+		// a person reaches by clicking, so the rule is where the pointer lands.
+		lines = append(lines, muted.Render(overlay.Truncate(
+			"Other keys reach the app and hide this pane;", inner)))
+		lines = append(lines, muted.Render(overlay.Truncate(
+			"a help key brings it back at once.", inner)))
+	}
 	return lines
 }
 

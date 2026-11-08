@@ -185,10 +185,11 @@ on a terminal too.
 ## Hover help
 
 `Ctrl+B h` or `Shift+F1` opens help mode; the `?` control on the dock does the
-same with a click, and another click closes it. It explains one component at a
-time rather than listing every key: move the pointer over a rail, the dock or
-one of its cells, a pane's title bar or its terminal body, and a pane with a
-red border appears above or below it, never over it when the screen has room.
+same with a click, opening on the control's own page, and another click closes
+it. It explains one component at a time rather than listing every key: move the
+pointer over a rail, the dock or one of its cells, a pane's title bar or its
+terminal body, and a pane with a red border appears above or below it, never
+over it when the screen has room.
 A rail section is the exception: its pane sits beside the rail, so the column
 being explained stays visible, narrowing the pane when the screen is tight.
 The pane says what the component is for, the hotkeys that act on it, and the
@@ -210,7 +211,9 @@ while the menu is up, and the chord that closes it leaves the pane hidden for
 the same two seconds as any other key. The title carries an idle countdown:
 every key and every click starts it again, and with no interaction the pane
 closes itself after thirty seconds, so it answers a question and then leaves
-rather than sitting over the screen until dismissed by hand.
+rather than sitting over the screen until dismissed by hand. The `?` control's
+own page is where the pane states that rule; every other page keeps to the
+component it explains.
 
 | Key | What it does |
 | --- | --- |
