@@ -209,7 +209,16 @@ read, and the pane redraws around the layout they leave.
 | `Shift+Up` | Move back out: previous part, then the component itself. |
 | `Up`, `Down` | Scroll the explanation when it is taller than the screen; the wheel does the same. The title and the navigation footer stay put. |
 | `h` | Show every keybinding of the selected component instead of the short list. |
-| `esc`, `Shift+F1` | Leave help mode. |
+| `Shift+Esc` | Leave help mode. |
+
+Those are defaults, and all six live in `[keybindings.help]`, each as an action:
+`help_next`, `help_deeper`, `help_shallower`, `help_scroll_up`,
+`help_scroll_down`, `help_keys` and `help_exit`. A rebind moves the key and
+everything the pane says about it together: the footer and the scroll marker
+name the configured keys, and an action set to `[]` leaves its line out rather
+than naming a key that does nothing. `help_exit` is `Shift+Esc` rather than
+`esc` on purpose: esc is what a pane wants for itself, and help must not take
+it. `Shift+F1` still leaves, being `toggle_help_mode` in `[keybindings.global]`.
 
 A hidden rail still has an entry in the rotation, marked `(hidden)`; its pane
 names the chord that brings it back, and that chord works from here. Help mode

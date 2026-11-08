@@ -57,6 +57,9 @@ type sectionMaps struct {
 	sidebarAgents, inbox, inboxPeek, mail, copyMode       map[string]string
 	transfers, lists, review                              map[string]string
 	quickLook, quickLookInside                            map[string]string
+	// help is the keys help mode reads while it is up, looked up before
+	// anything else the key would reach. See GetHelpAction.
+	help map[string]string
 	// menus holds each declared menu (see MenuConfig), by name.
 	menus map[string]map[string]string
 }
@@ -130,6 +133,7 @@ func (r *KeybindRegistry) buildMappings() {
 		transfers:       r.sectionKeyMap(kb.Transfers),
 		copyMode:        r.sectionKeyMap(kb.CopyMode),
 		review:          r.sectionKeyMap(kb.Review),
+		help:            r.sectionKeyMap(kb.Help),
 		menus:           make(map[string]map[string]string, len(kb.Menus)),
 	}
 	for _, name := range kb.MenuNames() {
@@ -421,6 +425,20 @@ func (r *KeybindRegistry) GetReviewAction(key string) string {
 	return r.lookupKey(key, r.sections.review)
 }
 
+// GetHelpAction returns the action a key runs while help mode is up, or "" for
+// a key help mode does not bind. The pane reads only its own keys: every other
+// key is the app's, and this lookup is what tells the two apart.
+func (r *KeybindRegistry) GetHelpAction(key string) string {
+	return r.lookupKey(key, r.sections.help)
+}
+
+// GetHelpKeys is GetKeys for help mode's own navigation, for the pane's footer
+// and the scroll marker. A rebound key shows there as the key the config binds,
+// not as the default the code was written with.
+func (r *KeybindRegistry) GetHelpKeys(action string) []string {
+	return r.config.Keybindings.Help[action]
+}
+
 // GetReviewKeys is GetKeys for the review overlay, for its key hints and the
 // help overlay.
 func (r *KeybindRegistry) GetReviewKeys(action string) []string {
@@ -593,7 +611,7 @@ func buildPressesByAction(r *KeybindRegistry) map[string][]string {
 // no chord that would say so.
 func contextOnlyScope(scope string) bool {
 	switch scope {
-	case ScopeSidebar, ScopeSidebarFiles, ScopeSidebarAgents, ScopeQuickLook, ScopeQuickLookIn, ScopeScript, ScopeLists, ScopeInbox, ScopeInboxPeek, ScopeMail, ScopeTransfers, ScopeCopyMode, ScopeReview:
+	case ScopeSidebar, ScopeSidebarFiles, ScopeSidebarAgents, ScopeQuickLook, ScopeQuickLookIn, ScopeScript, ScopeLists, ScopeInbox, ScopeInboxPeek, ScopeMail, ScopeTransfers, ScopeCopyMode, ScopeReview, ScopeHelp:
 		return true
 	case ScopeGUI:
 		// Only the GUI reads these keys. A terminal's help that listed
@@ -1093,6 +1111,16 @@ var ActionDescriptions = map[string]string{
 	"launcher":         "Open the app launcher",
 	"toggle_help_mode": "Inspect a component's help",
 	"new_session":      "Make a session, asking which machine",
+
+	// Help mode's own navigation, live only while it is up. See
+	// getDefaultHelpKeybinds.
+	"help_next":        "Next component in the explanation",
+	"help_deeper":      "Into the selected component's parts",
+	"help_shallower":   "Back out to the component above the part",
+	"help_scroll_up":   "Scroll the explanation up",
+	"help_scroll_down": "Scroll the explanation down",
+	"help_keys":        "Show or hide all of the component's keys",
+	"help_exit":        "Leave the explanation",
 
 	// Script playback
 	"script_pause": "Pause or resume the playing tape",
