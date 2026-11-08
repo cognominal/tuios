@@ -806,7 +806,7 @@ func (m *OS) helpDockComponent() helpComponent {
 	if position == "" {
 		position = "top"
 	}
-	purpose := "The dock is the status bar: the mode pill, the workspace strip, minimized panes, session controls, notifications and whatever cells the configuration puts on it. Clicking a cell acts on the row it names."
+	purpose := "The dock is the status bar: the mode pill, the ? control that opens this explanation, the workspace strip, minimized panes, session controls, notifications and whatever cells the configuration puts on it. Clicking a cell acts on the row it names."
 	if hidden {
 		purpose = "The dock is hidden, so it has no rectangle to hover. Show it with the CLI line below and it becomes a component here again. " + purpose
 	}
@@ -922,6 +922,13 @@ func (m *OS) helpDockCellComponent(name, parent string, rect image.Rectangle) he
 		c.purpose = "The daemon session this client is showing, its accent, and whether other clients are attached. Clicking it opens the session switcher."
 		c.keys = helpCap(m.helpKeys("prefix_session_switcher", "prefix_close_session"), 6)
 		c.cli = []string{"tuios rename-session <name>", "tuios set-session-accent <colour>", "tuios ls"}
+	case name == "help":
+		c.title = "Help"
+		c.purpose = "The ? control: a click opens this explanation for whatever the pointer is over, and a click while it is up closes it. It does the same thing the keys do, so a person who does not know the chord can still find the explanation, and it is the cell that teaches its own key."
+		c.keys = helpCap(m.helpKeys("prefix_help_mode", "toggle_help_mode"), 4)
+		if exit := m.helpOwnKey(config.ActionHelpExit); exit != "" {
+			c.rows = append(c.rows, helpKey{press: exit, desc: "Close the explanation from the keyboard"})
+		}
 	case name == "mode":
 		c.title = "Mode"
 		c.purpose = "The mode pill is the dock's answer to where a key will go, and it changes with the state that holds the keyboard. Its colour is the state's own: window management and terminal mode keep their icons (appearance.dock_mode_icon_window and appearance.dock_mode_icon_terminal), blue and green in the default theme. With tiling on and appearance.dock_mode_pill = tiling, it shows the tiling icon with the next split's direction after it. It is a readout, not a button."
