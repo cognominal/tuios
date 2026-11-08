@@ -277,9 +277,6 @@ func NewOS(opts OSOptions) *OS {
 	// Sidebar order and expand/collapse state survive restarts; a load failure
 	// just means the defaults (creation order, current session expanded).
 	os.loadSidebarState()
-	// The dock's help control is introduced once, on the first run that has
-	// not seen it; the marker says so. See help_first_run.go.
-	os.loadHelpBlink()
 
 	// The $PATH cache starts empty and is filled by the first palette open, so
 	// startup pays nothing for a launcher the user may never reach for. Launch

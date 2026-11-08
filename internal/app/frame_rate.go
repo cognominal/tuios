@@ -103,6 +103,10 @@ type displayRateMsg struct{ hz int }
 // the next start.
 func (m *OS) BindProgram(p *tea.Program) {
 	m.frameRate.program = p
+	// The dock's help control is introduced once, on the first run that has not
+	// seen it. It hangs off the program rather than the model, because only a
+	// program can animate it and only a run writes the marker that ends it.
+	m.loadHelpBlink()
 	bindMissingDiagram(p)
 	m.applyFrameRate()
 	m.detectDisplayRate(false)

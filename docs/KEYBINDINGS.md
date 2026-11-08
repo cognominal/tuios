@@ -207,7 +207,10 @@ toggles, a workspace switch and a command for the focused pane run while you
 read, and the pane redraws around the layout they leave. The leader opens its
 menu over the screen rather than beside the pane: the explanation stands aside
 while the menu is up, and the chord that closes it leaves the pane hidden for
-the same two seconds as any other key.
+the same two seconds as any other key. The title carries an idle countdown:
+every key and every click starts it again, and with no interaction the pane
+closes itself after thirty seconds, so it answers a question and then leaves
+rather than sitting over the screen until dismissed by hand.
 
 | Key | What it does |
 | --- | --- |

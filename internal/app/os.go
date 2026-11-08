@@ -293,6 +293,12 @@ type OS struct {
 	helpBlinkOn bool
 	// helpBlinkTicking says the tick that advances the blink is armed.
 	helpBlinkTicking bool
+	// helpStopAt is when the explanation closes itself. Every interaction
+	// pushes it back, so a pane opened to answer one question does not sit over
+	// the screen forever.
+	helpStopAt time.Time
+	// helpStopTicking says the tick that checks helpStopAt is armed.
+	helpStopTicking bool
 	// helpComps is the component list the last frame drew. Motion and the
 	// navigation keys read it instead of rebuilding every row's help.
 	helpComps       []helpComponent
