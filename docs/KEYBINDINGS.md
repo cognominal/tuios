@@ -222,9 +222,12 @@ it. `Shift+F1` still leaves, being `toggle_help_mode` in `[keybindings.global]`.
 
 A hidden rail still has an entry in the rotation, marked `(hidden)`; its pane
 names the chord that brings it back, and that chord works from here. Help mode
-keeps the pointer while it is up: a click picks the component under it and does
-nothing else, and the wheel scrolls the explanation. A panel opened over it
-takes the pointer and the keys.
+keeps the pointer while it is up: a click on a pane picks the part it explains
+and cannot focus or move it, and the wheel scrolls the explanation. The dock is
+the exception, because its cells are controls: a click on one does what it does
+with the pane down, from a workspace tab to a minimized pane's pill to a custom
+cell, and the explanation follows the click. A panel opened over help takes
+the pointer and the keys.
 
 A key help mode does not bind does what it does without the pane, and the pane
 steps out of sight while it runs: it comes back after two seconds, and any of
