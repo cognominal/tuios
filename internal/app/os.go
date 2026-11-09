@@ -256,8 +256,9 @@ type OS struct {
 	pointerSeenX int
 	pointerSeenY int
 	ShowHelp     bool
-	// HelpMode is the hover help mode: the leader then h, or Shift+F1, enters it,
-	// Shift+Esc leaves it. The mouse, or Shift+Right and Shift+Left, walks the
+	// HelpMode is the hover help mode: the leader then h, or Shift+F1, enters
+	// it, and the same chord, or a click on the dock's ? control, leaves it.
+	// The mouse, or Shift+Right and Shift+Left, walks the
 	// components on screen, and Shift+Down and Shift+Up walk their parts; the
 	// pane explains the one under the cursor. It
 	// reads only the keys it binds, so every other key reaches the app and the
@@ -294,12 +295,6 @@ type OS struct {
 	helpBlinkOn bool
 	// helpBlinkTicking says the tick that advances the blink is armed.
 	helpBlinkTicking bool
-	// helpStopAt is when the explanation closes itself. Every interaction
-	// pushes it back, so a pane opened to answer one question does not sit over
-	// the screen forever.
-	helpStopAt time.Time
-	// helpStopTicking says the tick that checks helpStopAt is armed.
-	helpStopTicking bool
 	// helpComps is the component list the last frame drew. Motion and the
 	// navigation keys read it instead of rebuilding every row's help.
 	helpComps       []helpComponent

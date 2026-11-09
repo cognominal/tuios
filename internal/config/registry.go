@@ -1121,7 +1121,6 @@ var ActionDescriptions = map[string]string{
 	"help_scroll_up":   "Scroll the explanation up",
 	"help_scroll_down": "Scroll the explanation down",
 	"help_keys":        "Show or hide all of the component's keys",
-	"help_exit":        "Leave the explanation",
 
 	// Script playback
 	"script_pause": "Pause or resume the playing tape",

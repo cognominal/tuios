@@ -20,8 +20,9 @@ import (
 // overlay: nothing is listed up front, and it reads only the keys it binds.
 // The pointer, or Shift+Right and Shift+Left, moves between the components on
 // screen; Shift+Down and Shift+Up walk the parts of one, in the order the frame
-// draws them; h shows the whole keybinding set of the component selected;
-// Shift+Esc leaves.
+// draws them; h shows the whole keybinding set of the component selected. It
+// leaves the way it came: the leader chord, Shift+F1, or a click on the dock's
+// ? control.
 // The rest of the keyboard is the app's, so a chord the pane lists runs while
 // the pane explains it, and the pane follows the layout that chord leaves. A
 // key that runs this way also steps the pane out of sight for a moment, so the
@@ -94,7 +95,6 @@ func (m *OS) enterHelpMode(id string) {
 	m.helpTarget = ""
 	m.helpPaneRect = image.Rectangle{}
 	m.helpComps = nil
-	m.HelpTouch()
 	comps := m.helpComponents()
 	switch {
 	case id != "" && helpIndex(comps, id) >= 0:
@@ -105,8 +105,9 @@ func (m *OS) enterHelpMode(id string) {
 	m.helpInvalidate()
 }
 
-// ExitHelpMode leaves help mode. A leader chord after it opens the ordinary
-// leader menu again, and Shift+Esc or Shift+F1 goes back to the pane.
+// ExitHelpMode leaves help mode. It is reached by both toggles, the chord that
+// opened it and the dock's ? control, so nothing of its own is bound to close
+// it and esc stays the pane's.
 func (m *OS) ExitHelpMode() {
 	m.HelpMode = false
 	m.helpHidden = false
@@ -115,49 +116,7 @@ func (m *OS) ExitHelpMode() {
 	m.helpTarget = ""
 	m.helpPaneRect = image.Rectangle{}
 	m.helpComps = nil
-	m.helpStopAt = time.Time{}
 	m.helpInvalidate()
-}
-
-// HelpTouch pushes the time the explanation closes itself back to a full
-// stretch. It is what makes the countdown an idle timer: reading the pane and
-// walking it keep it up, and leaving the keyboard alone lets it go.
-func (m *OS) HelpTouch() {
-	if !m.HelpMode {
-		return
-	}
-	m.helpStopAt = time.Now().Add(helpStopFor)
-}
-
-// helpStopSeconds is the whole seconds left on the countdown, rounded up so a
-// pane that shows "1s" is still up.
-func (m *OS) helpStopSeconds() int {
-	left := time.Until(m.helpStopAt)
-	if left <= 0 {
-		return 0
-	}
-	return int((left + time.Second - 1) / time.Second)
-}
-
-// helpStopTick arms the countdown's next second, when the pane is up.
-func (m *OS) helpStopTick() tea.Cmd {
-	if !m.HelpMode || m.helpStopTicking {
-		return nil
-	}
-	m.helpStopTicking = true
-	return tea.Tick(helpStopStep, func(time.Time) tea.Msg { return helpStopMsg{} })
-}
-
-// advanceHelpStop checks the countdown. It closes help when the time is up and
-// otherwise lets the armer in Update start the next second.
-func (m *OS) advanceHelpStop() {
-	m.helpStopTicking = false
-	if !m.HelpMode || m.helpStopAt.IsZero() {
-		return
-	}
-	if !time.Now().Before(m.helpStopAt) {
-		m.ExitHelpMode()
-	}
 }
 
 // helpControlLit reports whether the dock's help control is drawn as the one
@@ -1037,9 +996,6 @@ func (m *OS) helpDockCellComponent(name, parent string, rect image.Rectangle) he
 		c.title = "Help"
 		c.purpose = "The ? control: a click opens this explanation, turned to the control itself, so the button answers what it is and how help mode behaves; a click while it is up closes it. It does the same thing the keys do, so a person who does not know the chord can still find the explanation, and it is the cell that teaches its own key."
 		c.keys = helpCap(m.helpKeys("prefix_help_mode", "toggle_help_mode"), 4)
-		if exit := m.helpOwnKey(config.ActionHelpExit); exit != "" {
-			c.rows = append(c.rows, helpKey{press: exit, desc: "Close the explanation from the keyboard"})
-		}
 	case name == "mode":
 		c.title = "Mode"
 		c.purpose = "The mode pill is the dock's answer to where a key will go, and it changes with the state that holds the keyboard. Its colour is the state's own: window management and terminal mode keep their icons (appearance.dock_mode_icon_window and appearance.dock_mode_icon_terminal), blue and green in the default theme. With tiling on and appearance.dock_mode_pill = tiling, it shows the tiling icon with the next split's direction after it. It is a readout, not a button."
@@ -1542,18 +1498,7 @@ func (m *OS) helpHeaderLines(comps []helpComponent, cur *helpComponent, width in
 		}
 		heading += fmt.Sprintf(" (%d %s)", kids, noun)
 	}
-	line := title.Render(overlay.Truncate(heading, inner))
-	// The countdown sits at the title's right edge, dimmed, so it is read only
-	// when looked for. It is the pane's own idle timer: an interaction pushes
-	// the time back, and the pane leaves when it runs out.
-	if m.HelpMode && !m.helpStopAt.IsZero() {
-		counter := overlay.Style(bg).Foreground(pal.FgDim).Render(
-			fmt.Sprintf("help mode stops in %ds", m.helpStopSeconds()))
-		if gap := inner - lipgloss.Width(line) - lipgloss.Width(counter); gap > 0 {
-			line += strings.Repeat(" ", gap) + counter
-		}
-	}
-	lines = append(lines, line)
+	lines = append(lines, title.Render(overlay.Truncate(heading, inner)))
 	if path := m.helpPath(comps, cur); path != "" && path != cur.title {
 		lines = append(lines, muted.Render(overlay.Truncate(path, inner)))
 	}
@@ -1569,8 +1514,6 @@ func (m *OS) helpHeaderLines(comps []helpComponent, cur *helpComponent, width in
 			"Other keys reach the app and hide this pane;", inner)))
 		lines = append(lines, muted.Render(overlay.Truncate(
 			"a help key brings it back at once.", inner)))
-		lines = append(lines, muted.Render(overlay.Truncate(
-			"esc alone reaches the app but leaves this count alone.", inner)))
 	}
 	return lines
 }
@@ -1726,11 +1669,6 @@ func (m *OS) helpFooterLines(comps []helpComponent, cur *helpComponent, width in
 	var hints []hint
 	// Every hint is a configured key, so a rebind shows the key the config
 	// binds and an action the config unbound leaves no promise behind.
-	own := func(action, desc string) {
-		if press := m.helpOwnKey(action); press != "" {
-			hints = append(hints, hint{press, desc})
-		}
-	}
 	prev, next := m.helpOwnKey(config.ActionHelpPrev), m.helpOwnKey(config.ActionHelpNext)
 	switch {
 	case prev != "" && next != "":
@@ -1764,8 +1702,6 @@ func (m *OS) helpFooterLines(comps []helpComponent, cur *helpComponent, width in
 			hints = append(hints, hint{down, "scroll down"})
 		}
 	}
-	own(config.ActionHelpKeys, "all keys")
-	own(config.ActionHelpExit, "exit")
 
 	const gap = "    "
 	lines := []string{title.Render("Navigating help")}

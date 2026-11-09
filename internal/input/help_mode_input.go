@@ -32,8 +32,9 @@ func helpOwnsPointer(o *app.OS) bool {
 // the explanation is up. The pane follows whatever layout they leave on the
 // next frame, which is what makes the listed chords worth pressing.
 //
-// Shift+Esc is the way out by default, because esc is what a pane wants for
-// itself and help must not take it. The keys themselves come from
+// Help binds no key to close itself. It is left the way it was opened, the
+// toggle chord or the dock's ? control, so esc stays the pane's and there is
+// one way out for a person to learn. The keys themselves come from
 // [keybindings.help], through GetHelpAction, so a rebind moves the pane and the
 // hint that names it together.
 //
@@ -46,9 +47,6 @@ func handleHelpModeKey(msg tea.KeyPressMsg, o *app.OS) (*app.OS, tea.Cmd, bool) 
 	}
 	action := lookupAction(o, msg, o.KeybindRegistry.GetHelpAction)
 	switch action {
-	case config.ActionHelpExit:
-		noteHelpAction(o, action)
-		o.ExitHelpMode()
 	case config.ActionHelpNext:
 		noteHelpAction(o, action)
 		o.HelpNext(1)

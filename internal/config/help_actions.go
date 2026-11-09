@@ -24,14 +24,13 @@ const (
 	// ActionHelpKeys shows or hides the selected component's whole
 	// keybinding set.
 	ActionHelpKeys = "help_keys"
-	// ActionHelpExit leaves help mode. It is a chord because esc is what a
-	// pane wants for itself, and help must not take it.
-	ActionHelpExit = "help_exit"
 )
 
 // getDefaultHelpKeybinds returns the keys help mode answers to. Each is a
 // chord rather than a bare letter: the bare ones write into the pane once the
-// explanation is gone, and h is the only letter the pane keeps.
+// explanation is gone, and h is the only letter the pane keeps. Nothing here
+// closes the pane: the chord that opens it and the dock's ? control both
+// toggle, so a key of help's own would be a second way out to learn.
 func getDefaultHelpKeybinds() map[string][]string {
 	return map[string][]string{
 		ActionHelpNext:       {"shift+right"},
@@ -41,9 +40,5 @@ func getDefaultHelpKeybinds() map[string][]string {
 		ActionHelpScrollUp:   {"up"},
 		ActionHelpScrollDown: {"down"},
 		ActionHelpKeys:       {"h"},
-		// shift+esc rather than esc: a pane may want esc, and the shifted form
-		// is what the terminal reports apart from it. shift+f1, the other way
-		// in, also leaves, through toggle_help_mode's own bind.
-		ActionHelpExit: {"shift+esc"},
 	}
 }

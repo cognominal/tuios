@@ -76,7 +76,6 @@ func HandleInput(msg tea.Msg, o *app.OS) (tea.Model, tea.Cmd) {
 		// stops working while its explanation is up teaches the wrong thing
 		// about it. A panel above help takes the pointer.
 		if o.HelpMode && helpOwnsPointer(o) {
-			o.HelpTouch()
 			o.HelpHoverAt(msg.X, msg.Y)
 			if !o.InDockBand(msg.Y) {
 				return o, nil
@@ -161,7 +160,6 @@ func HandleInput(msg tea.Msg, o *app.OS) (tea.Model, tea.Cmd) {
 			if msg.Button == tea.MouseWheelDown {
 				step = 3
 			}
-			o.HelpTouch()
 			o.HelpScroll(step)
 			return o, nil
 		}
@@ -448,19 +446,6 @@ func HandleKeyPress(msg tea.KeyPressMsg, o *app.OS) (*app.OS, tea.Cmd) {
 	// run while it is up, so pressing the rail's toggle beside the explanation
 	// changes what the next frame explains.
 	if o.HelpMode {
-		// A bare esc is the key a hand reaches for when it means the shifted
-		// chord that closes the pane. It is usually a mistake, so it is the one
-		// key that does not start the countdown again: it still runs on the
-		// screen underneath and the pane still steps aside for it, so the
-		// count keeps falling while the reader's slipped chord does its own
-		// work. The chord that closes is the configured help_exit, Shift+Esc by
-		// default.
-		if msg.String() != "esc" {
-			// A key is an interaction even when the key is not help's: the
-			// reader is still working, so the countdown in the title starts
-			// again.
-			o.HelpTouch()
-		}
 		owns := helpOwnsKey(msg, o)
 		if owns {
 			if result, cmd, handled := handleHelpModeKey(msg, o); handled {

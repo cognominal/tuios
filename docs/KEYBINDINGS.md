@@ -208,13 +208,8 @@ toggles, a workspace switch and a command for the focused pane run while you
 read, and the pane redraws around the layout they leave. The leader opens its
 menu over the screen rather than beside the pane: the explanation stands aside
 while the menu is up, and the chord that closes it leaves the pane hidden for
-the same two seconds as any other key. The title carries an idle countdown:
-every key and every click starts it again, except a bare `esc`, which is
-usually the shifted chord typed by mistake, and with no interaction the pane
-closes itself after thirty seconds, so it answers a question and then leaves
-rather than sitting over the screen until dismissed by hand. The `?` control's
-own page is where the pane states that rule; every other page keeps to the
-component it explains.
+the same two seconds as any other key. The `?` control's own page is where the
+pane states that rule; every other page keeps to the component it explains.
 
 | Key | What it does |
 | --- | --- |
@@ -222,17 +217,20 @@ component it explains.
 | `Shift+Down`, `Shift+Up` | Next or previous part of the selected component, in the order the frame draws it: the dock's cells left to right, the rail's sections down the column, a pane's title bar before its body. Wraps at the ends. |
 | `Up`, `Down` | Scroll the explanation when it is taller than the screen; the wheel does the same. The title and the navigation footer stay put. |
 | `h` | Show every keybinding of the selected component instead of the short list. |
-| `Shift+Esc` | Leave help mode. |
 
-Those are defaults, and all eight live in `[keybindings.help]`, each as an
+The pane's footer names the way out rather than binding one: `Ctrl+B h` again,
+with the leader your config sets, or `Shift+F1` where the prefix mode has no
+`prefix_help_mode`. The `h` that shows every key is left off the footer; it is
+on the dock's `?` page, its own page listing the component's whole set.
+
+Those are defaults, and all seven live in `[keybindings.help]`, each as an
 action: `help_next`, `help_prev`, `help_part_next`, `help_part_prev`,
-`help_scroll_up`, `help_scroll_down`, `help_keys` and `help_exit`. A rebind
-moves the key and everything the pane says about it together: the footer and
-the scroll marker name the configured keys, and an action set to `[]` leaves
-its line out rather than naming a key that does nothing. `help_exit` is
-`Shift+Esc` rather than `esc` on purpose: esc is what a pane wants for itself,
-and help must not take it. `Shift+F1` still leaves, being `toggle_help_mode` in
-`[keybindings.global]`.
+`help_scroll_up`, `help_scroll_down` and `help_keys`. A rebind moves the key
+and everything the pane says about it together: the footer and the scroll
+marker name the configured keys, and an action set to `[]` leaves its line out
+rather than naming a key that does nothing. Help mode binds nothing to close
+itself. It is left the way it was opened: `Ctrl+B h` again, `Shift+F1`, or a
+click on the dock's `?` control. `esc` is never taken from the pane.
 
 A hidden rail still has an entry in the rotation, marked `(hidden)`; its pane
 names the chord that brings it back, and that chord works from here. Help mode
@@ -247,10 +245,7 @@ A key help mode does not bind does what it does without the pane, and the pane
 steps out of sight while it runs: it comes back after two seconds, and any of
 the navigation keys brings it back at once. That is how a bare `h` or `Up` can
 belong to the pane's explanation over a terminal and still leave the keyboard
-free; `Shift+Esc` is the way out for good. A bare `esc` is the exception only
-to the countdown: it reaches the app and hides the pane for its two seconds
-like any other key, because it is usually `Shift+Esc` typed without the shift,
-but it does not restart the idle count.
+free. `esc` does what it does in the app, which is the pane's and not help's.
 
 Everything but that component and the explaining pane is dimmed by
 `appearance.modal_dim` (default `30`), so the component under the pane stays the

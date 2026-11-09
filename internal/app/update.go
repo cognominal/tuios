@@ -977,17 +977,13 @@ func (m *OS) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if m.frameRate.program != nil && (!m.renderSkipped || isPersonInput(msg) || m.flushWhileIdle(msg)) {
 		cmd = tea.Batch(cmd, flushCmd)
 	}
-	// The first-run blink of the dock's help control and the countdown in the
-	// pane's title advance on their own ticks. Both are events of a running
-	// program, not of a model a test drives by hand, so neither arms until the
-	// program is bound: an Update that returns no command is what the callers
-	// of a test model expect.
+	// The first-run blink of the dock's help control advances on its own
+	// tick. It is an event of a running program, not of a model a test drives
+	// by hand, so it does not arm until the program is bound: an Update that
+	// returns no command is what the callers of a test model expect.
 	if m.frameRate.program != nil {
 		if bc := m.helpBlinkTick(); bc != nil {
 			cmd = tea.Batch(cmd, bc)
-		}
-		if sc := m.helpStopTick(); sc != nil {
-			cmd = tea.Batch(cmd, sc)
 		}
 	}
 	return model, cmd
@@ -2963,10 +2959,6 @@ func (m *OS) handleMsg(msg tea.Msg) (model tea.Model, cmd tea.Cmd) {
 
 	case helpBlinkMsg:
 		m.advanceHelpBlink()
-		return m, nil
-
-	case helpStopMsg:
-		m.advanceHelpStop()
 		return m, nil
 
 	case displayRateMsg:
