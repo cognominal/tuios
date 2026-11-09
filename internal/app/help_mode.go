@@ -255,18 +255,6 @@ func (m *OS) HelpToggleKeys() {
 // the person pauses, and any navigation key brings it back at once.
 const helpHideFor = 2 * time.Second
 
-// helpStopFor is how long the explanation stays up without an interaction.
-// The title carries the remaining time, and a key or a click pushes it back:
-// the pane answers a question and then leaves, instead of sitting over the
-// screen until it is dismissed by hand.
-const helpStopFor = 30 * time.Second
-
-// helpStopStep is how often the countdown is checked and redrawn.
-const helpStopStep = time.Second
-
-// helpStopMsg advances the countdown by one second.
-type helpStopMsg struct{}
-
 // helpShowMsg ends the hide numbered seq, unless a later key started another.
 type helpShowMsg struct{ seq int }
 
@@ -527,6 +515,33 @@ func helpPressLabel(press string) string {
 		parts[i] = config.KeyLabel(parts[i])
 	}
 	return strings.Join(parts, " ")
+}
+
+// helpToggleChord spells the chord that opens help mode, for the footer that
+// names the way out. The way in is the way out: PressesByAction's press for
+// prefix_help_mode, the leader included and spelled as the config sets it, or
+// Shift+F1 when that prefix mode carries none. Empty when neither is bound, so
+// the footer promises only a key that runs.
+func (m *OS) helpToggleChord() string {
+	if m.KeybindRegistry == nil {
+		return ""
+	}
+	var chord string
+	for _, press := range config.PressesByAction(m.KeybindRegistry)["prefix_help_mode"] {
+		if press != "" {
+			chord = helpPressLabel(press)
+			break
+		}
+	}
+	if chord == "" {
+		for _, press := range config.PressesByAction(m.KeybindRegistry)["toggle_help_mode"] {
+			if press != "" {
+				chord = helpPressLabel(press)
+				break
+			}
+		}
+	}
+	return chord
 }
 
 func helpCap(keys []helpKey, n int) []helpKey {
@@ -1701,6 +1716,12 @@ func (m *OS) helpFooterLines(comps []helpComponent, cur *helpComponent, width in
 		case down != "":
 			hints = append(hints, hint{down, "scroll down"})
 		}
+	}
+	// The way out is named, not bound: help leaves through the chord that
+	// opened it, spelled with the leader the config sets. The all-keys key is
+	// left out on purpose; the ? page lists it where a reader can find it.
+	if press := m.helpToggleChord(); press != "" {
+		hints = append(hints, hint{press, "close"})
 	}
 
 	const gap = "    "
