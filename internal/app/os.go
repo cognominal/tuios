@@ -288,13 +288,6 @@ type OS struct {
 	// helpHideDue says a key hid the pane and the tick that ends the hide is
 	// still owed to Update. The key router marks it; see FlushHelpHide.
 	helpHideDue bool
-	// helpBlinkUntil is when the first-run blink of the dock's help control
-	// ends. Zero means the control has been seen, so it stays quiet.
-	helpBlinkUntil time.Time
-	// helpBlinkOn is the lit half of that blink.
-	helpBlinkOn bool
-	// helpBlinkTicking says the tick that advances the blink is armed.
-	helpBlinkTicking bool
 	// helpComps is the component list the last frame drew. Motion and the
 	// navigation keys read it instead of rebuilding every row's help.
 	helpComps       []helpComponent

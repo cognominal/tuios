@@ -184,9 +184,10 @@ on a terminal too.
 
 ## Hover help
 
-`Ctrl+B h` or `Shift+F1` opens help mode; the `?` control on the dock does the
+`Ctrl+B h` or `Shift+F1` opens help mode. A `?` control on the dock does the
 same with a click, opening on the control's own page, and another click closes
-it. It explains one component at a time rather than listing every key: move the
+it; the control is not on the default bar, so add `"help"` to `dock.left` or
+`dock.right` to have it. It explains one component at a time rather than listing every key: move the
 pointer over a rail, the dock or one of its cells, a pane's title bar or its
 terminal body, and a pane with a red border appears above or below it, never
 over it when the screen has room.

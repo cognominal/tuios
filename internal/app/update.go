@@ -977,15 +977,6 @@ func (m *OS) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if m.frameRate.program != nil && (!m.renderSkipped || isPersonInput(msg) || m.flushWhileIdle(msg)) {
 		cmd = tea.Batch(cmd, flushCmd)
 	}
-	// The first-run blink of the dock's help control advances on its own
-	// tick. It is an event of a running program, not of a model a test drives
-	// by hand, so it does not arm until the program is bound: an Update that
-	// returns no command is what the callers of a test model expect.
-	if m.frameRate.program != nil {
-		if bc := m.helpBlinkTick(); bc != nil {
-			cmd = tea.Batch(cmd, bc)
-		}
-	}
 	return model, cmd
 }
 
@@ -2955,10 +2946,6 @@ func (m *OS) handleMsg(msg tea.Msg) (model tea.Model, cmd tea.Cmd) {
 
 	case helpShowMsg:
 		m.showHelp(msg)
-		return m, nil
-
-	case helpBlinkMsg:
-		m.advanceHelpBlink()
 		return m, nil
 
 	case displayRateMsg:

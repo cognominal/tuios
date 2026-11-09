@@ -122,12 +122,7 @@ func (m *OS) ExitHelpMode() {
 // helpControlLit reports whether the dock's help control is drawn as the one
 // in use. A control that opened the pane stays lit while the pane is up, so
 // the bar answers "where did this come from" without a second glance.
-func (m *OS) helpControlLit() bool {
-	if m.HelpMode {
-		return true
-	}
-	return !m.helpBlinkUntil.IsZero() && m.helpBlinkOn
-}
+func (m *OS) helpControlLit() bool { return m.HelpMode }
 
 // helpInvalidate makes the next frame compose rather than serve the last one.
 func (m *OS) helpInvalidate() {
@@ -1022,7 +1017,8 @@ func (m *OS) helpDockCellComponent(name, parent string, rect image.Rectangle) he
 		c.cli = []string{"tuios rename-session <name>", "tuios set-session-accent <colour>", "tuios ls"}
 	case name == "help":
 		c.title = "Help"
-		c.purpose = "The ? control: a click opens this explanation, turned to the control itself, so the button answers what it is and how help mode behaves; a click while it is up closes it. It does the same thing the keys do, so a person who does not know the chord can still find the explanation, and it is the cell that teaches its own key."
+		c.purpose = "The ? control: a click opens this explanation, turned to the control itself, so the button answers what it is and how help mode behaves; a click while it is up closes it. It does the same thing the keys do, so a person who does not know the chord can still find the explanation, and it is the cell that teaches its own key. It is not on the bar until a dock list names it."
+		c.cli = []string{"tuios config edit  # [dock] left or right", "tuios list-dock-components"}
 		c.keys = helpCap(m.helpKeys("prefix_help_mode", "toggle_help_mode"), 4)
 	case name == "mode":
 		c.title = "Mode"
